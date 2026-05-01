@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class RequestRegister extends FormRequest
+class PatientRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,10 +22,13 @@ class RequestRegister extends FormRequest
     public function rules(): array
     {
         return [
-        'phone' => 'required|string|unique:users,phone|max:10',
-        'name' => 'required|string|max:15',
-        'last_name' => 'required|string|max:15',
-        'email' => 'required|email|unique:users,email',
+            'gender' => 'required|in:male,female,other',
+            'birth_date' => 'required|date|before:today',
+            'blood_type' => 'required',
+            'allergies' => 'nullable|string|max:500',
+            'hereditary' => 'nullable|string|max:500',
+            'chronic_diseases' => 'nullable|string|max:500',
+            'address' => 'required|string|max:255',
         ];
     }
 }

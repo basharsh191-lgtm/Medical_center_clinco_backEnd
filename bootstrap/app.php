@@ -12,8 +12,15 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+        'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+    ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
-    })->create();
+    $exceptions->render(function (\Spatie\Permission\Exceptions\UnauthorizedException $e, $request) {
+        return response()->json([
+            'status' => 403,
+            'message' => 'عذراً، لا تملك الصلاحيات (الرتبة) اللازمة للوصول لهذا المسار.',
+            'error' => 'Unauthorized_Role'
+        ], 403);
+    });    })->create();
