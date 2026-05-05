@@ -21,8 +21,11 @@ protected $PatientService;
     $patient=$this->PatientService->createPatient($validated);
         return response()->json([
                 'success' => true,
-                'message' => 'تم إنشاء المريض بنجاح',
                 'data' => $patient
             ], 201);
+    }
+    public function showPatient($id)
+    {
+        return $this->PatientService->getPatientById($id);
     }
 }

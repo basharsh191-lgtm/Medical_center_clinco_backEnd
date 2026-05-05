@@ -15,5 +15,6 @@ Route::post('/resendOtp',[UserController::class,'resendOtp']);
 
 Route::middleware(['auth:sanctum','role:patient'])->group(function () {
     Route::post('/storePatient', [PatientController::class, 'storePatient']);
+    Route::get('/showPatient/{id}',[PatientController::class,'showPatient']);
 });
 

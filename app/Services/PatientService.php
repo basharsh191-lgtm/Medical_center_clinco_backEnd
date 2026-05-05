@@ -30,4 +30,21 @@ public function createPatient(array $data)
 
     return $patient->load('user');
 }
+public function getPatientById($id)
+{
+    $authenticatedUser = Auth::user();
+
+    if($authenticatedUser->id != $id)
+    {
+        return response()->json(['message' => 'Unauthorized - You can only access your own data'], 403);
+    }
+    $patient = Patient::where('user_id', $id)->firstOrFail();
+
+    if(!$patient)
+    {
+        return response()->json(['message' => 'Patient not found'], 404);
+    }
+
+   return response()->json($patient->load('user'), 200);
+}
 }
