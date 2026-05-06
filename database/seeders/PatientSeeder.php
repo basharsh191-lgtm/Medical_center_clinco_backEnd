@@ -26,6 +26,7 @@ class PatientSeeder extends Seeder
                 'chronic_diseases' => 'None',
                 'gender'           => 'male',
                 'address'          => 'Damascus, Syria',
+                'image'            =>  null
             ]);
             $user->assignRole('patient');
     }

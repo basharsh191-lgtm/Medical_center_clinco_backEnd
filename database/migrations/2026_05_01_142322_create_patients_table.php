@@ -14,6 +14,7 @@ return new class extends Migration
     Schema::create('patients', function (Blueprint $table) {
         $table->id();
         $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+        $table->string('image')->nullable();
         $table->enum('gender', ['male', 'female', 'other']);
         $table->string('address');
         $table->date('birth_date');

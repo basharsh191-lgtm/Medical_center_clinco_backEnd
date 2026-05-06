@@ -23,6 +23,7 @@ class PatientRequest extends FormRequest
     {
         return [
             'gender' => 'required|in:male,female,other',
+            'image'=>'nullable|image|mimes:png,jpg',
             'birth_date' => 'required|date|before:today',
             'blood_type' => 'required',
             'allergies' => 'nullable|string|max:500',

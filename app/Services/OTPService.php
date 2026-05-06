@@ -11,10 +11,12 @@ use Illuminate\Support\Facades\Mail;
 
 class OTPService
 {
+    //موقف ارسال ال otp
 public function sendOtpToEmail($email, $otp, $name = null)
 {
     try {
-        Mail::to($email)->send(new Otpmail($otp, $name));
+        //لح وقفها للسرعة
+       // Mail::to($email)->send(new Otpmail($otp, $name));
         return response()->json([
         'status' => true,
         'message' => 'تم إرسال الرمز إلى بريدك الإلكتروني.',

@@ -6,7 +6,7 @@ use App\Models\patient;
 use Illuminate\Support\Facades\Auth;
 
 class PatientService{
-public function createPatient(array $data)
+public function createPatient(array $data,$imageFile = null)
 {
     // الحصول على ID المستخدم المسجل حالياً
     $userId = Auth::user()->id;
@@ -26,6 +26,7 @@ public function createPatient(array $data)
         'chronic_diseases' => $data['chronic_diseases'] ?? null,
         'gender'           => $data['gender'],
         'address'          => $data['address'],
+        'image'            => $data['image']
     ]);
 
     return $patient->load('user');
