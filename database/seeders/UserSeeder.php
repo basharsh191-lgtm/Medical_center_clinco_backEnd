@@ -13,11 +13,44 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        $user=User::create([
+        $users=[
+        [
         'name'=>'bashar',
         'last_name'=>'Ali',
         'email'=>'bashar@gmail.com',
         'phone'=>'0969551428'
-        ]);
+        ],
+        [
+        'name'=>'ammar',
+        'last_name'=>'Ali',
+        'email'=>'ammar@gmail.com',
+        'phone'=>'0981498112'
+        ],
+        [
+        'name'=>'mohamad',
+        'last_name'=>'Ali',
+        'email'=>'mohamad@gmail.com',
+        'phone'=>'0999459200'
+        ],        [
+        'name'=>'jad',
+        'last_name'=>'mohammad',
+        'email'=>'jad@gmail.com',
+        'phone'=>'0969225748'
+        ],        [
+        'name'=>'yassin',
+        'last_name'=>'ommar',
+        'email'=>'yassin@gmail.com',
+        'phone'=>'0969552428'
+        ],        [
+        'name'=>'saad',
+        'last_name'=>'mahmud',
+        'email'=>'saad@gmail.com',
+        'phone'=>'0969551328'
+        ],
+        ];
+        foreach($users as $user)
+            {
+                User::create($user);
+            }
     }
 }

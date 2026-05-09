@@ -14,11 +14,9 @@ class PatientSeeder extends Seeder
      */
     public function run(): void
     {
-        $user = User::first();
-
-        if ($user) {
-            patient::create([
-                'user_id'          => $user->id,
+        $patientsData = [
+            [
+                'user_id'          => 1,
                 'birth_date'       => '1995-05-15',
                 'blood_type'       => 'O+',
                 'allergies'        => 'No allergies',
@@ -26,9 +24,26 @@ class PatientSeeder extends Seeder
                 'chronic_diseases' => 'None',
                 'gender'           => 'male',
                 'address'          => 'Damascus, Syria',
-                'image'            =>  null
-            ]);
-            $user->assignRole('patient');
+                'image'            => null
+            ],
+            [
+                'user_id'          => 2,
+                'birth_date'       => '2005-05-15',
+                'blood_type'       => 'AB+',
+                'allergies'        => 'No allergies',
+                'hereditary'       => 'None',
+                'chronic_diseases' => 'None',
+                'gender'           => 'male',
+                'address'          => 'Homs, Syria',
+                'image'            => null
+            ],
+        ];
+        foreach ($patientsData as $patientData) {
+            $user = User::find($patientData['user_id']);
+            if ($user) {
+                Patient::create($patientData);
+                $user->assignRole('patient');
+            }
+        }
     }
-}
 }

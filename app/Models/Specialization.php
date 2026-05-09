@@ -11,4 +11,8 @@ class Specialization extends Model
     {
         return $this->hasOne(Clinic::class);
     }
+    public function doctor()
+    {
+        return $this->hasOne(Doctor::class);
+    }
 }
