@@ -31,21 +31,30 @@ class UserSeeder extends Seeder
         'last_name'=>'Ali',
         'email'=>'mohamad@gmail.com',
         'phone'=>'0999459200'
-        ],        [
+        ],
+        [
         'name'=>'jad',
         'last_name'=>'mohammad',
         'email'=>'jad@gmail.com',
         'phone'=>'0969225748'
-        ],        [
+        ],
+        [
         'name'=>'yassin',
         'last_name'=>'ommar',
         'email'=>'yassin@gmail.com',
         'phone'=>'0969552428'
-        ],        [
+        ],
+        [
         'name'=>'saad',
         'last_name'=>'mahmud',
         'email'=>'saad@gmail.com',
         'phone'=>'0969551328'
+        ],
+        [
+        'name'=>'nour',
+        'last_name'=>'mahmud',
+        'email'=>'nour@gmail.com',
+        'phone'=>'0966551328'
         ],
         ];
         foreach($users as $user)
