@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\AiController;
+use App\Http\Controllers\ClincController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\UserController;
 use App\Mail\Otpmail;
@@ -17,4 +19,11 @@ Route::middleware(['auth:sanctum','role:patient'])->group(function () {
     Route::post('/storePatient', [PatientController::class, 'storePatient']);
     Route::get('/showPatient/{id}',[PatientController::class,'showPatient']);
 });
+//استدعاء العيادة مع دكاترتها
+Route::get('/showClinic/{id}',[ClincController::class,'showClinic']);
+//عرض بروفايل دكتور معين
+Route::get('/showDoctor/{id}',[ClincController::class,'showDoctor']);
+
+
+
 

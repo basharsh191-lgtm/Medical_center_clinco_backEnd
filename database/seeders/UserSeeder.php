@@ -56,6 +56,12 @@ class UserSeeder extends Seeder
         'email'=>'nour@gmail.com',
         'phone'=>'0966551328'
         ],
+        [
+        'name'=>'yara',
+        'last_name'=>'bader',
+        'email'=>'yara@gmail.com',
+        'phone'=>'0986551328'
+        ],
         ];
         foreach($users as $user)
             {

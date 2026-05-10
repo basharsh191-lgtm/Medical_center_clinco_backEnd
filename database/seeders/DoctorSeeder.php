@@ -55,6 +55,14 @@ class DoctorSeeder extends Seeder
                 'experience_years' => rand(2, 20),
                 'bio' => 'تشخيص وعلاج التسوس، خلع الأسنان التالفة، تركيب الحشوات والجسور والتيجان، وتجميل الابتسامة وتبييض الأسنان.',
             ],
+            [
+                'user_id' => 8,
+                'specialization_id' => 1,
+                'clinic_id' => 1,
+                'image' => 'http://127.0.0.1:8000/storage/doctor_picture/8.jpg',
+                'experience_years' => rand(2, 20),
+                'bio' => "خبير في مجاله الطبي ولديه خبرة واسعة في التعامل مع الحالات الحرجةالقلبية.",
+            ],
         ];
         foreach($doctors as $doctor)
             {

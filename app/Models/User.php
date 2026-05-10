@@ -57,4 +57,8 @@ class User extends Authenticatable
     {
         return $this->hasOne(Doctor::class);
     }
+    public function consultations()
+    {
+        return $this->hasMany(AiConsultation::class);
+    }
 }
