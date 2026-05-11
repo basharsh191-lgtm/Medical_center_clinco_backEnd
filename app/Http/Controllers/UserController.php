@@ -10,6 +10,7 @@ use App\Services\OTPService;
 use App\Models\User;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 use function Pest\Laravel\delete;
 
@@ -54,27 +55,17 @@ public function resendOtp(Request $request)
 }
 public function login(LoginRequest $request)
 {
-    $data = $request->validated();
-    $user = User::where('phone', $data['phone'])->first();
-
-    if (!$user) {
-        return response()->json([
-            'message' => 'المستخدم غير موجود'
-        ], 404);
-    }
-
-    $sent = $this->OTPService->handleOtp($user);
-
-    if (!$sent) {
-        return response()->json([
-            'message' => 'فشل إرسال رمز التحقق'
-        ], 500);
-    }
-
-    return response()->json([
-        'message' => 'تم إرسال رمز التحقق إلى رقم هاتفك',
-        'is_verified' => false
-    ], 200);
+    $request->validated();
+        if(!Auth::attempt($request->only('email','password')))
+        {
+            return response()->json(['message'=>'Invalid email or password'], 401);
+        }
+        $user=User::where('email',$request->email)->firstOrFail();
+        $token=$user->createToken('auth_Token')->plainTextToken;
+        return response()->json(
+            ['massage'=>'User log in Succssfully ',
+                    'Token'=>$token
+                    ], 201);
 }
 public function logout(Request $request)
 {

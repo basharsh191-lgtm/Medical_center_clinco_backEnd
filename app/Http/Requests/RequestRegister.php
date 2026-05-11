@@ -26,6 +26,7 @@ class RequestRegister extends FormRequest
         'name' => 'required|string|max:15',
         'last_name' => 'required|string|max:15',
         'email' => 'required|email|unique:users,email',
+        'password'=>'required|string|min:8'
         ];
     }
 }

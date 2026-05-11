@@ -24,7 +24,8 @@ class User extends Authenticatable
         'email',
         'phone',
         'is_verified',
-        'last_name'
+        'last_name',
+        'password',
     ];
 
     /**
@@ -56,9 +57,5 @@ class User extends Authenticatable
     public function doctor()
     {
         return $this->hasOne(Doctor::class);
-    }
-    public function consultations()
-    {
-        return $this->hasMany(AiConsultation::class);
     }
 }
