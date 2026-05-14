@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
         SpecializationSeeder::class,
         ClinicSeeder::class,
         DoctorSeeder::class,
+        AdmainSeeder::class,
     ]);
 
     }
