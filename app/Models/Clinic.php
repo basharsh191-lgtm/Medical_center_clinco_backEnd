@@ -15,4 +15,8 @@ class Clinic extends Model
     {
         return $this->hasMany(Doctor::class);
     }
+    public function resiption()
+    {
+        return $this->hasOne(Reception::class);
+    }
 }

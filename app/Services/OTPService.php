@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\otp_user;
 use App\Notifications\OtpNotification;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -99,6 +100,36 @@ public function resendOtp(string $phone)
         'message' => 'تم إرسال رمز جديدك.',
         'expires_at' => $otpEntry->expires_at
     ]);
+}
+
+public function sendResetPasswordOtp(string $email)
+{
+    $user = User::where('email', $email)->first();
+
+    if (!$user) {
+        return response()->json(['message' => 'هذا البريد غير مسجل لدينا'], 404);
+    }
+    return $this->handleOtp($user);
+}
+public function resetPasswordWithOtp(array $data)
+{
+    $otpRecord = otp_user::where('phone', $data['phone'])
+        ->where('otp', $data['otp'])
+        ->where('expires_at', '>', now())
+        ->first();
+
+    if (!$otpRecord) {
+        return response()->json(['message' => 'الرمز غير صحيح أو منتهي الصلاحية'], 422);
+    }
+
+    $user = User::where('phone', $data['phone'])->first();
+    $user->update([
+        'password' => Hash::make($data['password'])
+    ]);
+
+    $otpRecord->delete();
+
+    return response()->json(['message' => 'تم تغيير كلمة المرور بنجاح']);
 }
 
 }

@@ -6,19 +6,16 @@ use App\Models\patient;
 use Illuminate\Support\Facades\Auth;
 
 class PatientService{
-public function createPatient(array $data,$imageFile = null)
+public function createPatient(array $data)
 {
-    // الحصول على ID المستخدم المسجل حالياً
-    $userId = Auth::user()->id;
-    $exists = Patient::where('user_id', $userId)->exists();
+    $userId = Auth::id();
 
-    if ($exists) {
-        return response()->json([
-            'message' => 'هذا المستخدم لديه حساب مريض بالفعل.'
-        ], 422);
+    if (Patient::where('user_id', $userId)->exists()) {
+        return null;
     }
+
     $patient = Patient::create([
-        'user_id'          => $userId, // نضع القيمة مباشرة هنا
+        'user_id'          => $userId,
         'birth_date'       => $data['birth_date'],
         'blood_type'       => $data['blood_type'],
         'allergies'        => $data['allergies'] ?? null,
@@ -26,26 +23,22 @@ public function createPatient(array $data,$imageFile = null)
         'chronic_diseases' => $data['chronic_diseases'] ?? null,
         'gender'           => $data['gender'],
         'address'          => $data['address'],
-        'image'            => $data['image']
+        'image'            => $data['image'] ?? null, // تأكد أنها اختيارية هنا
     ]);
 
     return $patient->load('user');
 }
-public function getPatientById($id)
+public function getMyProfile()
 {
-    $authenticatedUser = Auth::user();
+    $user = Auth::user();
 
-    if($authenticatedUser->id != $id)
-    {
-        return response()->json(['message' => 'Unauthorized - You can only access your own data'], 403);
-    }
-    $patient = Patient::where('user_id', $id)->firstOrFail();
+    $patient = Patient::where('user_id', $user->id)->with('user')->first();
 
-    if(!$patient)
-    {
-        return response()->json(['message' => 'Patient not found'], 404);
+    if(!$patient) {
+        return response()->json(['message' => 'Profile not found'], 404);
     }
 
-   return response()->json($patient->load('user'), 200);
-}
+$patient->image_url = $patient->image ? asset('storage/' . $patient->image) : null;
+
+    return response()->json($patient, 200);}
 }
