@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Mail\superAdminEmail;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 
 class StaffService
 {
@@ -24,6 +26,7 @@ class StaffService
 
             // Assign Role
             $user->assignRole($role);
+            Mail::to($data['email'])->send(new superAdminEmail($data['email'],$data['password']));
 
             // إنشاء البيانات الخاصة حسب الدور
             match ($role) {
@@ -41,7 +44,7 @@ class StaffService
 
     private function createDoctorProfile($user, array $data)
     {
-        $imagePath = $data['image']->store('doctors', 'public');
+        $imagePath = $data['image']->store('doctor_picture', 'public');
 
         $user->doctorProfile()->create([
             'specialization_id' => $data['specialization_id'],

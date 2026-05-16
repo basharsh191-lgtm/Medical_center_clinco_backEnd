@@ -17,7 +17,7 @@ public function sendOtpToEmail($email, $otp, $name = null)
 {
     try {
         //لح وقفها للسرعة
-       // Mail::to($email)->send(new Otpmail($otp, $name));
+        Mail::to($email)->send(new Otpmail($otp, $name));
         return response()->json([
         'status' => true,
         'message' => 'تم إرسال الرمز إلى بريدك الإلكتروني.',
