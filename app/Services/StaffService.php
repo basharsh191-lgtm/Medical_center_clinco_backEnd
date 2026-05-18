@@ -41,7 +41,6 @@ class StaffService
             return $user->load($this->relationName($role));
         });
     }
-
     private function createDoctorProfile($user, array $data)
     {
         $imagePath = $data['image']->store('doctor_picture', 'public');
@@ -54,7 +53,6 @@ class StaffService
             'image'             => $imagePath,
         ]);
     }
-
     private function createReceptionProfile($user, array $data)
     {
         $user->reception()->create([
@@ -66,7 +64,6 @@ class StaffService
             'biography'   => $data['biography'] ?? null,
         ]);
     }
-
     private function relationName(string $role): string
     {
         return match ($role) {

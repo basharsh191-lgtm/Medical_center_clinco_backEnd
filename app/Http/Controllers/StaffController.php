@@ -47,6 +47,5 @@ public function storeDoctor(DoctorRequest $request)
         'image_url' => $path ? asset('storage/' . $path) : null
             ], 201);
     }
-
-    }
+}
 

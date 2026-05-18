@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
         ClinicSeeder::class,
         DoctorSeeder::class,
         AdmainSeeder::class,
+        ReceptionSeeder::class,
     ]);
 
     }

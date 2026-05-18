@@ -21,7 +21,7 @@ class AdmainSeeder extends Seeder
         'email'=>'basharalshayyah@gmail.com',
         'phone'=>'0966667777',
         'password' => Hash::make('12345678'),
-        'is_verified'=>'true'
+        'is_verified'=>1
         ],
         [
         'name'=>'admain2',
@@ -29,7 +29,7 @@ class AdmainSeeder extends Seeder
         'email'=>'ammashayyahr@gmail.com',
         'phone'=>'0955556666',
         'password' => Hash::make('12345678'),
-        'is_verified'=>'true'
+        'is_verified'=>1
         ],
         ];
         foreach($admins as $admin)

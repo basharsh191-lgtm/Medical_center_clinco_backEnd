@@ -1,13 +1,10 @@
 <?php
 
-use App\Http\Controllers\AiController;
+use App\Http\Controllers\ReceptionistScheduleController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClincController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\StaffController;
-use App\Http\Controllers\UserController;
-use App\Mail\Otpmail;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 //Auth
@@ -37,7 +34,15 @@ Route::middleware(['auth:sanctum','role:super_admin'])->group(function () {
     Route::post('/add/doctor/admin', [StaffController::class, 'storeDoctor']);
     //اضافة ريسبشن
     Route::post('/add/resiption/admin', [StaffController::class, 'storeReception']);
-    //اضافة ممرض 
+    //اضافة ممرض مستقبلا
 });
 
+//reception
+Route::middleware(['auth:sanctum','role:reception'])->group(function () {
+//اضافة جدول لدكتور معين داخل عيادة مخصصة
+Route::post('store/schedule/reception',[ReceptionistScheduleController::class,'storeSchedule']);
+//جلب كل الاطباء في العيادة التي يشتغل بها الريسبشن
+Route::get('get/doctors/reception',[ReceptionistScheduleController::class,'getMyClinicDoctors']);
+
+});
 

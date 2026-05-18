@@ -16,7 +16,6 @@ return new class extends Migration
             $table->foreignId('specialization_id')->constrained('specializations')->cascadeOnDelete();
             $table->string('clinic_name');
             $table->text('description')->nullable();
-            $table->integer('appointment_duration');
             $table->integer('max_appointments_per_day')->default(20);
             $table->time('open_time');
             $table->time('close_time');
