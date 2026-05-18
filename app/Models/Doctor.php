@@ -19,4 +19,14 @@ class Doctor extends Model
     {
         return $this->belongsTo(Clinic::class);
     }
+    public function schedules()
+    {
+        return $this->hasMany(DoctorSchedule::class);
+    }
+
+    // طريقة لجلب الجداول النشطة فقط
+    public function activeSchedules()
+    {
+        return $this->hasMany(DoctorSchedule::class)->where('is_active', true);
+    }
 }

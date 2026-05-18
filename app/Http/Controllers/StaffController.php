@@ -5,10 +5,13 @@ namespace App\Http\Controllers;
 use App\Http\Requests\DoctorRequest;
 use App\Http\Requests\ReceptionRequest;
 use App\Services\StaffService;
+use App\UploadFileTrait;
 
 class StaffController extends Controller
 {
 protected $staffService;
+use UploadFileTrait;
+
 public function __construct(StaffService $staffService)
     {
         $this->staffService = $staffService;
@@ -27,6 +30,12 @@ public function storeReception(ReceptionRequest $request)
 }
 public function storeDoctor(DoctorRequest $request)
 {
+    if ($request->hasFile('image')) {
+    $path = $this->upload($request->file('image'), 'doctor_picture', 'public');
+    $validated['image'] = $path;
+    } else {
+        $validated['image'] = null;
+    }
     $doctor = $this->staffService->createStaff(
         $request->validated(),
         'doctor'
@@ -34,9 +43,9 @@ public function storeDoctor(DoctorRequest $request)
 
     return response()->json([
         'message' => 'Doctor created successfully',
-        'data' => $doctor
-    ], 201);
-}
-
+        'data' => $doctor,
+        'image_url' => $path ? asset('storage/' . $path) : null
+            ], 201);
     }
+}
 

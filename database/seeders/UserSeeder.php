@@ -71,6 +71,22 @@ class UserSeeder extends Seeder
         'phone'=>'0986551328',
         'password' => Hash::make('12345678'),
         ],
+        [
+        'name'=>'Alaa',
+        'last_name'=>'Ali',
+        'email'=>'Alaa@gmail.com',
+        'phone'=>'0966554428',
+        'password' => Hash::make('12345678'),
+        'is_verified'=>1
+        ],
+        [
+        'name'=>'yara',
+        'last_name'=>'Ali',
+        'email'=>'yaraAli@gmail.com',
+        'phone'=>'0986552328',
+        'password' => Hash::make('12345678'),
+        'is_verified'=>1
+        ],
         ];
         foreach($users as $user)
             {
