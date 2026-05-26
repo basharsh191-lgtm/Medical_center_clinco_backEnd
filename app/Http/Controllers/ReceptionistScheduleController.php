@@ -35,9 +35,6 @@ class ReceptionistScheduleController extends Controller
             ], 422);
         }
     }
-/**
- * الـ Endpoint الخاصة بإرجاع أطباء العيادة للـ Dropdown
- */
 public function getMyClinicDoctors()
 {
     try {

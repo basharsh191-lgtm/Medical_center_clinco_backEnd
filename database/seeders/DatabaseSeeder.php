@@ -22,6 +22,8 @@ class DatabaseSeeder extends Seeder
         DoctorSeeder::class,
         AdmainSeeder::class,
         ReceptionSeeder::class,
+        SchedulDoctoreSeeder::class,
+        AppointmentSeeder::class,
     ]);
 
     }
