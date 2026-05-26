@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\ReceptionistScheduleController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClincController;
@@ -27,6 +28,9 @@ Route::middleware(['auth:sanctum','role:patient'])->group(function () {
 Route::get('/showClinic/{id}',[ClincController::class,'showClinic']);
 //عرض بروفايل دكتور معين
 Route::get('/showDoctor/{id}',[ClincController::class,'showDoctor']);
+//عرض اوقات المتاحة للطبيب 
+Route::get('doctors/{doctor}/available-slots', [AppointmentController::class, 'getAvailableSlots']);
+
 
 //admain
 Route::middleware(['auth:sanctum','role:super_admin'])->group(function () {

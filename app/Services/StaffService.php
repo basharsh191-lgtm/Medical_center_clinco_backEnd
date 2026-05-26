@@ -49,6 +49,7 @@ class StaffService
             'specialization_id' => $data['specialization_id'],
             'clinic_id'         => $data['clinic_id'],
             'experience_years'  => $data['experience_years'] ?? 0,
+            'number_operations'  => $data['number_operations'] ?? 0,
             'bio'               => $data['bio'] ?? null,
             'image'             => $imagePath,
         ]);

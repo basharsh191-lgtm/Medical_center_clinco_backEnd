@@ -24,7 +24,8 @@ class PatientSeeder extends Seeder
                 'chronic_diseases' => 'None',
                 'gender'           => 'male',
                 'address'          => 'Damascus, Syria',
-                'image'            => null
+                'taller'            => 175,
+                'weight'            => 90,
             ],
             [
                 'user_id'          => 2,
@@ -35,7 +36,8 @@ class PatientSeeder extends Seeder
                 'chronic_diseases' => 'None',
                 'gender'           => 'male',
                 'address'          => 'Homs, Syria',
-                'image'            => null
+                'taller'            => 165,
+                'weight'            => 80,
             ],
         ];
         foreach ($patientsData as $patientData) {

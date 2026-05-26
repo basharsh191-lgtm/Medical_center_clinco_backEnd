@@ -41,8 +41,9 @@ public function storePatient(PatientRequest $request)
         'image_url' => $path ? asset('storage/' . $path) : null
     ], 201);
 }
-    public function showPatient()
+public function showPatient()
     {
         return $this->PatientService->getMyProfile();
-    }
+}
+
 }

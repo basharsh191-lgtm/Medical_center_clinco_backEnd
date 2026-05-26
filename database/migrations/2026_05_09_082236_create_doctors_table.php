@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('image');
             $table->integer('experience_years')->default(0);
             $table->text('bio')->nullable();
+            $table->integer('number_operations')->nullable();
             $table->timestamps();
         });
     }

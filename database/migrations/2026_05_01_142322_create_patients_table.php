@@ -16,7 +16,6 @@ return new class extends Migration
         $table->id();
         $table->uuid('qr_token')->unique();
         $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
-        $table->string('image')->nullable();
         $table->enum('gender', ['male', 'female', 'other']);
         $table->string('address');
         $table->date('birth_date');
@@ -24,6 +23,8 @@ return new class extends Migration
         $table->text('hereditary')->nullable();
         $table->text('chronic_diseases')->nullable();
         $table->text('blood_type')->nullable();
+        $table->integer('taller')->nullable();
+        $table->integer('weight')->nullable();
         $table->timestamps();
     });
     }

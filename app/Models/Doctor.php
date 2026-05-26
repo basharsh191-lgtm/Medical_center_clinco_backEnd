@@ -29,4 +29,8 @@ class Doctor extends Model
     {
         return $this->hasMany(DoctorSchedule::class)->where('is_active', true);
     }
+    public function appointments()
+    {
+        return $this->hasMany(Appointment::class);
+    }
 }

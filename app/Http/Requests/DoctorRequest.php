@@ -32,6 +32,7 @@ class DoctorRequest extends FormRequest
             'specialization_id' => 'required_if:role,doctor|exists:specializations,id',
             'clinic_id'         => 'required_if:role,doctor|exists:clinics,id',
             'experience_years'  => 'nullable|integer',
+            'number_operations'  => 'nullable|integer',
             'bio'               => 'nullable|string',
             'image'             => 'required_if:role,doctor|image|mimes:jpeg,png,jpg|max:2048',
         ];

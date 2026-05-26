@@ -25,7 +25,7 @@ return new class extends Migration
             ]);
             $table->time('start_time');
             $table->time('end_time');
-            $table->integer('appointment_duration')->default(15);
+            $table->integer('appointment_duration')->default(25);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 

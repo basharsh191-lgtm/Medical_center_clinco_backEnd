@@ -21,6 +21,7 @@ class DoctorSeeder extends Seeder
                 'clinic_id' => 1,
                 'image' => 'http://127.0.0.1:8000/storage/doctor_picture/3.jpg',
                 'experience_years' => rand(2, 20),
+                'number_operations'=>20,
                 'bio' => "خبير في مجاله الطبي ولديه خبرة واسعة في التعامل مع الحالات الحرجةالقلبية.",
             ],
             [
@@ -30,6 +31,7 @@ class DoctorSeeder extends Seeder
                 'image' => 'http://127.0.0.1:8000/storage/doctor_picture/4.jpg',
                 'experience_years' => rand(2, 20),
                 'bio' => "خبير في مجال التوليد و النسائية.",
+                'number_operations'=>20,
             ],
                         [
                 'user_id' => 5,

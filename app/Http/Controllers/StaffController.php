@@ -46,6 +46,7 @@ public function storeDoctor(DoctorRequest $request)
         'data' => $doctor,
         'image_url' => $path ? asset('storage/' . $path) : null
             ], 201);
-    }
+}
+// اضافة ممرض مستقبلا
 }
 
