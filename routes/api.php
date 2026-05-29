@@ -21,6 +21,8 @@ Route::post('/resendOtp',[AuthController::class,'resendOtp']);
 Route::middleware(['auth:sanctum','role:patient'])->group(function () {
     Route::post('/storePatient', [PatientController::class, 'storePatient']);
     Route::get('/showPatient',[PatientController::class,'showPatient']);
+    Route::post('/appointmentStore',[PatientController::class,'appointmentStore']);
+    Route::put('/appointmentUpdate/{appointment}',[PatientController::class,'appointmentUpdate']);
 });
 
 //show home page
@@ -28,7 +30,7 @@ Route::middleware(['auth:sanctum','role:patient'])->group(function () {
 Route::get('/showClinic/{id}',[ClincController::class,'showClinic']);
 //عرض بروفايل دكتور معين
 Route::get('/showDoctor/{id}',[ClincController::class,'showDoctor']);
-//عرض اوقات المتاحة للطبيب 
+//عرض اوقات المتاحة للطبيب
 Route::get('doctors/{doctor}/available-slots', [AppointmentController::class, 'getAvailableSlots']);
 
 

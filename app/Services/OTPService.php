@@ -101,7 +101,6 @@ public function resendOtp(string $phone)
         'expires_at' => $otpEntry->expires_at
     ]);
 }
-
 public function sendResetPasswordOtp(string $email)
 {
     $user = User::where('email', $email)->first();

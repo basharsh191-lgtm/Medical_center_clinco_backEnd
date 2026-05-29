@@ -23,13 +23,14 @@ class PatientRequest extends FormRequest
     {
         return [
             'gender' => 'required|in:male,female,other',
-            'image'=>'nullable|image|mimes:png,jpg',
             'birth_date' => 'required|date|before:today',
             'blood_type' => 'required',
             'allergies' => 'nullable|string|max:500',
             'hereditary' => 'nullable|string|max:500',
             'chronic_diseases' => 'nullable|string|max:500',
             'address' => 'required|string|max:255',
+            'taller' => 'nullable|integer|min:0',
+            'weight' => 'nullable|integer|min:0',
         ];
     }
 }
