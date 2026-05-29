@@ -23,7 +23,8 @@ public function createPatient(array $data)
         'chronic_diseases' => $data['chronic_diseases'] ?? null,
         'gender'           => $data['gender'],
         'address'          => $data['address'],
-        'image'            => $data['image'] ?? null, // تأكد أنها اختيارية هنا
+        'taller'           => $data['taller'] ?? null,
+        'weight'           => $data['weight'] ?? null,
     ]);
 
     return $patient->load('user');
@@ -40,5 +41,7 @@ public function getMyProfile()
 
 $patient->image_url = $patient->image ? asset('storage/' . $patient->image) : null;
 
-    return response()->json($patient, 200);}
+    return response()->json($patient, 200);
+}
+
 }

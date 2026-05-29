@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Appointment;
 use App\Models\DoctorSchedule;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class AppointmentService
 {
@@ -35,7 +36,7 @@ public function generateAvailableSlots(int $doctorId, string $date): array
     // 3. التعديل هنا: جلب المواعيد بناءً على عمود الـ appointment_date الفعلي
     $bookedAppointments = Appointment::where('doctor_id', $doctorId)
         ->where('appointment_date', $date) // التعديل الفعلي للتاريخ 🎯
-        ->whereIn('status', ['pending', 'confirmed', 'arrived'])
+        ->whereIn('status', ['scheduled', 'confirmed', 'arrived','no_show'])
         ->get(['start_time', 'end_time']);
 
     $slots = [];
@@ -86,5 +87,60 @@ public function generateAvailableSlots(int $doctorId, string $date): array
         ];
 
         return $days[$dayNameEn] ?? '';
+    }
+    public function isSlotAvailable(int $doctorId, string $date, string $startTime, string $endTime)
+    {
+        $availableSlots = $this->generateAvailableSlots($doctorId, $date);
+        if (empty($availableSlots)) {
+            return false;
+        }
+
+        foreach ($availableSlots as $slot) {
+            if ($slot['start_time'] === Carbon::parse($startTime)->format('H:i') &&
+                $slot['end_time'] === Carbon::parse($endTime)->format('H:i')) {
+                return $slot['is_available'];
+            }
+        }
+
+        return false;
+    }
+    public function updateAppointment(Appointment $appointment, array $data)
+    {
+        if ($appointment->patient_id !== Auth::id()) {
+        return [
+            'success' => false,
+            'message' => 'غير مصرح لك بتعديل هذا الموعد، هذا الموعد لا يخص حسابك.'
+        ];
+    }
+// 1. منع التعديل إذا كانت حالة الموعد الحالية لا تسمح
+        if (in_array($appointment->status, ['completed', 'cancelled', 'arrived','no_show'])) {
+            return [
+                'success' => false,
+                'message' => 'لا يمكنك تعديل موعد انتهى، رُفض، أو تم إلغاؤه بالفعل.'
+            ];
+        }
+
+        // 2. التحقق من توافر الموعد الجديد عبر الـ Slots
+        $isAvailable = $this->isSlotAvailable(
+            $appointment->doctor_id,
+            $data['appointment_date'],
+            $data['start_time'],
+            $data['end_time']
+        );
+
+        if (!$isAvailable) {
+            return [
+                'success' => false,
+                'message' => 'عذراً، الوقت الجديد المختار غير متاح أو محجوز.'
+            ];
+        }
+
+        // 3. تحديث الموعد في قاعدة البيانات
+        $appointment->update($data);
+
+        return [
+            'success' => true,
+            'data' => $appointment
+        ];
     }
 }

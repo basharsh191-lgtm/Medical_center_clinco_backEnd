@@ -2,31 +2,32 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AppointmentPatientRequest;
+use App\Http\Requests\AppointmentUpdateRequest;
 use App\Http\Requests\PatientRequest;
+use App\Models\Appointment;
 use App\Models\patient;
+use App\Services\AppointmentService;
 use App\Services\PatientService;
 use App\UploadFileTrait;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class PatientController extends Controller
 {
 protected $PatientService;
+protected $AppointmentService;
+
 use UploadFileTrait;
-    public function __construct(PatientService $PatientService)
+public function __construct(PatientService $PatientService , AppointmentService $AppointmentService)
     {
         $this->PatientService = $PatientService;
-    }
+        $this->AppointmentService = $AppointmentService;
+}
 public function storePatient(PatientRequest $request)
 {
     $validated = $request->validated();
-    $path = null;
-    if ($request->hasFile('image')) {
-        $path = $this->upload($request->file('image'), 'profile', 'public');
-        $validated['image'] = $path;
-    } else {
-        $validated['image'] = null;
-    }
     $patient = $this->PatientService->createPatient($validated);
     if (!$patient) {
         return response()->json([
@@ -38,12 +39,36 @@ public function storePatient(PatientRequest $request)
         'success' => true,
         'message' => 'تم إنشاء ملف المريض بنجاح',
         'data' => $patient,
-        'image_url' => $path ? asset('storage/' . $path) : null
     ], 201);
 }
 public function showPatient()
-    {
-        return $this->PatientService->getMyProfile();
+{
+    return $this->PatientService->getMyProfile();
 }
+//طريقة جديدة لل clean code
+public function appointmentStore(AppointmentPatientRequest $request)
+{
+    // البيانات قادمة جاهزة ومفحوصة ومحقون فيها الـ patient_id
+    $appointment = Appointment::create($request->validated());
 
+    return response()->json([
+        'success' => true,
+        'message' => 'تم حجز الموعد بنجاح.',
+        'data'    => $appointment
+    ], 201);
+}
+public function appointmentUpdate(AppointmentUpdateRequest $request, Appointment $appointment)
+{
+    $result = $this->AppointmentService->updateAppointment($appointment, $request->validated());
+
+    if (!$result['success']) {
+        return response()->json(['success' => false, 'message' => $result['message']], 422);
+    }
+
+    return response()->json([
+        'success' => true,
+        'message' => 'تم تحديث الموعد بنجاح.',
+        'data'    => $result['data']
+    ], 200);
+}
 }
