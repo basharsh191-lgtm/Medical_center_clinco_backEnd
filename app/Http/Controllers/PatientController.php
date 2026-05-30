@@ -48,7 +48,6 @@ public function showPatient()
 //طريقة جديدة لل clean code
 public function appointmentStore(AppointmentPatientRequest $request)
 {
-    // البيانات قادمة جاهزة ومفحوصة ومحقون فيها الـ patient_id
     $appointment = Appointment::create($request->validated());
 
     return response()->json([
@@ -71,4 +70,12 @@ public function appointmentUpdate(AppointmentUpdateRequest $request, Appointment
         'data'    => $result['data']
     ], 200);
 }
+public function appointmentCancel(Appointment $appointment)
+{
+    $result = $this->AppointmentService->cancelAppointment($appointment);
+
+    return response()->json($result['response'], $result['status_code']);
 }
+}
+
+

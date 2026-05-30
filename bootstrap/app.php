@@ -3,6 +3,8 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -23,4 +25,20 @@ return Application::configure(basePath: dirname(__DIR__))
             'message' => 'عذراً، لا تملك الصلاحيات (الرتبة) اللازمة للوصول لهذا المسار.',
             'error' => 'Unauthorized_Role'
         ], 403);
-    });    })->create();
+    });
+    //rate limiting for login route
+    $exceptions->render(function (ThrottleRequestsException $e, Request $request) {
+            // نتحقق أن الطلب قادم للـ API لتخصيص الرد له
+            if ($request->is('api/*')) {
+                $headers = $e->getHeaders();
+                $retryAfter = $headers['Retry-After'] ?? 60; // عدد الثواني المتبقية
+
+                return response()->json([
+                    'status' => 429,
+                    'message' => "لقد تجاوزت الحد المسموح به من المحاولات. يرجى الانتظار والمحاولة مجدداً بعد {$retryAfter} ثانية.",
+                    'error' => 'Too_Many_Attempts',
+                    'retry_after_seconds' => (int) $retryAfter
+                ], 429);
+            }
+        });
+    })->create();
