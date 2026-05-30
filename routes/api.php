@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Route;
 
 //Auth
 Route::post('/register',[AuthController::class,'register']);
-Route::post('/login',[AuthController::class,'login']);
+Route::post('/login',[AuthController::class,'login'])->middleware('throttle:5,1'); // تقييد محاولات تسجيل الدخول لمنع الهجمات
 Route::post('logout',[AuthController::class,'logout'])->middleware('auth:sanctum');
 Route::post('/password/forgot', [AuthController::class, 'forgotPassword']);
 Route::post('/password/reset', [AuthController::class, 'resetPassword']);
@@ -23,6 +23,7 @@ Route::middleware(['auth:sanctum','role:patient'])->group(function () {
     Route::get('/showPatient',[PatientController::class,'showPatient']);
     Route::post('/appointmentStore',[PatientController::class,'appointmentStore']);
     Route::put('/appointmentUpdate/{appointment}',[PatientController::class,'appointmentUpdate']);
+    Route::delete('/appointmentCancel/{appointment}',[PatientController::class,'appointmentCancel']);
 });
 
 //show home page

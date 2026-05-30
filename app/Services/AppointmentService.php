@@ -16,64 +16,57 @@ class AppointmentService
      * @param string $date (Format: Y-m-d)
      * @return array
      */
-public function generateAvailableSlots(int $doctorId, string $date): array
-{
-    // 1. معرفة اسم اليوم باللغة العربية
-    $carbonDate = Carbon::parse($date);
-    $dayNameEn = $carbonDate->format('l');
-    $dayNameAr = $this->translateDayToArabic($dayNameEn);
+    public function generateAvailableSlots(int $doctorId, string $date): array
+    {
+        $carbonDate = Carbon::parse($date);
+        $dayNameEn = $carbonDate->format('l');
+        $dayNameAr = $this->translateDayToArabic($dayNameEn);
 
-    // 2. جلب دوام الدكتور في هذا اليوم
-    $schedule = DoctorSchedule::where('doctor_id', $doctorId)
-        ->where('day', $dayNameAr)
-        ->where('is_active', true)
-        ->first();
+        $schedule = DoctorSchedule::where('doctor_id', $doctorId)
+            ->where('day', $dayNameAr)
+            ->where('is_active', true)
+            ->first();
 
-    if (!$schedule) {
-        return [];
+        if (!$schedule) {
+            return [];
+        }
+
+        $bookedAppointments = Appointment::where('doctor_id', $doctorId)
+            ->where('appointment_date', $date)
+            ->whereIn('status', ['scheduled', 'confirmed', 'arrived', 'no_show'])
+            ->get(['start_time', 'end_time']);
+
+        $slots = [];
+
+        // دمج التاريخ المختار مع وقت بداية ونهاية الدوام للمقارنة الزمنية
+        $startTime = Carbon::parse($date . ' ' . $schedule->start_time);
+        $endTime = Carbon::parse($date . ' ' . $schedule->end_time);
+        $duration = $schedule->appointment_duration;
+
+        while ($startTime->copy()->addMinutes($duration)->lte($endTime)) {
+            $slotStart = $startTime->copy();
+            $slotEnd = $startTime->copy()->addMinutes($duration);
+
+            // فحص التداخل
+            $isBooked = $bookedAppointments->contains(function ($appointment) use ($slotStart, $slotEnd, $date) {
+                // ندمج تاريخ اليوم المرسل مع وقت الحجز المخزن بقاعدة البيانات لتصبح المقارنة دقيقة كـ DateTime
+                $appointmentStart = Carbon::parse($date . ' ' . $appointment->start_time);
+                $appointmentEnd = Carbon::parse($date . ' ' . $appointment->end_time);
+
+                return $slotStart->lt($appointmentEnd) && $slotEnd->gt($appointmentStart);
+            });
+
+            $slots[] = [
+                'start_time'   => $slotStart->format('H:i'),
+                'end_time'     => $slotEnd->format('H:i'),
+                'is_available' => !$isBooked,
+            ];
+
+            $startTime->addMinutes($duration);
+        }
+
+        return $slots;
     }
-
-    // 3. التعديل هنا: جلب المواعيد بناءً على عمود الـ appointment_date الفعلي
-    $bookedAppointments = Appointment::where('doctor_id', $doctorId)
-        ->where('appointment_date', $date) // التعديل الفعلي للتاريخ 🎯
-        ->whereIn('status', ['scheduled', 'confirmed', 'arrived','no_show'])
-        ->get(['start_time', 'end_time']);
-
-    $slots = [];
-
-    // دمج التاريخ المختار مع وقت بداية ونهاية الدوام للمقارنة الزمنية
-    $startTime = Carbon::parse($date . ' ' . $schedule->start_time);
-    $endTime = Carbon::parse($date . ' ' . $schedule->end_time);
-    $duration = $schedule->appointment_duration;
-
-    while ($startTime->copy()->addMinutes($duration)->lte($endTime)) {
-        $slotStart = $startTime->copy();
-        $slotEnd = $startTime->copy()->addMinutes($duration);
-
-        // فحص التداخل
-        $isBooked = $bookedAppointments->contains(function ($appointment) use ($slotStart, $slotEnd, $date) {
-            // ندمج تاريخ اليوم المرسل مع وقت الحجز المخزن بقاعدة البيانات لتصبح المقارنة دقيقة كـ DateTime
-            $appointmentStart = Carbon::parse($date . ' ' . $appointment->start_time);
-            $appointmentEnd = Carbon::parse($date . ' ' . $appointment->end_time);
-
-            return $slotStart->lt($appointmentEnd) && $slotEnd->gt($appointmentStart);
-        });
-
-        $slots[] = [
-            'start_time'   => $slotStart->format('H:i'),
-            'end_time'     => $slotEnd->format('H:i'),
-            'is_available' => !$isBooked,
-        ];
-
-        $startTime->addMinutes($duration);
-    }
-
-    return $slots;
-}
-
-    /**
-     * دالة مساعدة لتحويل اسم اليوم من الإنكليزية إلى العربية لتتوافق مع الـ Migration
-     */
     private function translateDayToArabic(string $dayNameEn): string
     {
         $days = [
@@ -96,8 +89,10 @@ public function generateAvailableSlots(int $doctorId, string $date): array
         }
 
         foreach ($availableSlots as $slot) {
-            if ($slot['start_time'] === Carbon::parse($startTime)->format('H:i') &&
-                $slot['end_time'] === Carbon::parse($endTime)->format('H:i')) {
+            if (
+                $slot['start_time'] === Carbon::parse($startTime)->format('H:i') &&
+                $slot['end_time'] === Carbon::parse($endTime)->format('H:i')
+            ) {
                 return $slot['is_available'];
             }
         }
@@ -107,40 +102,64 @@ public function generateAvailableSlots(int $doctorId, string $date): array
     public function updateAppointment(Appointment $appointment, array $data)
     {
         if ($appointment->patient_id !== Auth::id()) {
-        return [
-            'success' => false,
-            'message' => 'غير مصرح لك بتعديل هذا الموعد، هذا الموعد لا يخص حسابك.'
-        ];
-    }
-// 1. منع التعديل إذا كانت حالة الموعد الحالية لا تسمح
-        if (in_array($appointment->status, ['completed', 'cancelled', 'arrived','no_show'])) {
+            return [
+                'success' => false,
+                'message' => 'غير مصرح لك بتعديل هذا الموعد، هذا الموعد لا يخص حسابك.'
+            ];
+        }
+        // 1 منع التعديل إذا كانت حالة الموعد الحالية لا تسمح
+        if (in_array($appointment->status, ['completed', 'cancelled', 'arrived', 'no_show'])) {
             return [
                 'success' => false,
                 'message' => 'لا يمكنك تعديل موعد انتهى، رُفض، أو تم إلغاؤه بالفعل.'
             ];
         }
-
-        // 2. التحقق من توافر الموعد الجديد عبر الـ Slots
         $isAvailable = $this->isSlotAvailable(
             $appointment->doctor_id,
             $data['appointment_date'],
             $data['start_time'],
             $data['end_time']
         );
-
         if (!$isAvailable) {
             return [
                 'success' => false,
                 'message' => 'عذراً، الوقت الجديد المختار غير متاح أو محجوز.'
             ];
         }
-
-        // 3. تحديث الموعد في قاعدة البيانات
         $appointment->update($data);
-
         return [
             'success' => true,
             'data' => $appointment
+        ];
+    }
+    public function cancelAppointment(Appointment $appointment): array
+    {
+        if ($appointment->patient_id !== Auth::id()) {
+            return [
+                'status_code' => 403,
+                'response' => [
+                    'success' => false,
+                    'message' => 'غير مصرح لك بإلغاء هذا الموعد، هذا الموعد لا يخص حسابك.'
+                ]
+            ];
+        }
+        if (in_array($appointment->status, ['completed', 'cancelled', 'arrived', 'no_show'])) {
+            return [
+                'status_code' => 422,
+                'response' => [
+                    'success' => false,
+                    'message' => 'لا يمكنك إلغاء موعد انتهى، رُفض، أو تم إلغاؤه بالفعل.'
+                ]
+            ];
+        }
+        $appointment->update(['status' => 'cancelled']);
+        return [
+            'status_code' => 200,
+            'response' => [
+                'success' => true,
+                'message' => 'تم إلغاء الموعد بنجاح.',
+                'data'    => $appointment
+            ]
         ];
     }
 }
