@@ -5,6 +5,7 @@ use App\Http\Controllers\ReceptionistScheduleController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClincController;
 use App\Http\Controllers\PatientController;
+use App\Http\Controllers\RatingController;
 use App\Http\Controllers\StaffController;
 use Illuminate\Support\Facades\Route;
 
@@ -24,7 +25,12 @@ Route::middleware(['auth:sanctum','role:patient'])->group(function () {
     Route::post('/appointmentStore',[PatientController::class,'appointmentStore']);
     Route::put('/appointmentUpdate/{appointment}',[PatientController::class,'appointmentUpdate']);
     Route::delete('/appointmentCancel/{appointment}',[PatientController::class,'appointmentCancel']);
+    Route::post('/ratings/{doctorId}',[RatingController::class,'storeRating']);
 });
+
+//عرض تقييمات الأطباء
+Route::get('/showAllRatingsDoctors', [RatingController::class, 'showAllRatingsDoctors']);
+Route::get('/showDoctorRatings/{id}', [RatingController::class, 'showDoctorRatings']);
 
 //show home page
 //استدعاء العيادة مع دكاترتها

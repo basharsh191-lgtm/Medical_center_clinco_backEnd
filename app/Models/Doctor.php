@@ -33,4 +33,13 @@ class Doctor extends Model
     {
         return $this->hasMany(Appointment::class);
     }
+    public function ratings()
+    {
+        return $this->morphMany(Rating::class, 'rateable');
+    }
+    // طريقة لحساب متوسط التقييمات
+    public function averageRating()
+    {
+        return $this->ratings()->avg('stars') ?? 0;
+    }
 }
