@@ -26,9 +26,12 @@
                     <!-- الهيدر والشعار -->
                     <tr>
                         <td class="content-padding" align="center" style="padding: 40px 35px 15px 35px;">
+                            @php($logoPath = public_path('storage/logo/logo.jpg'))
+                            @if(file_exists($logoPath))
                             <div style="margin-bottom: 16px;">
-                                <img src="{{ $message->embed(public_path('storage/logo/logo.jpg')) }}" alt="Clinco" width="80" style="display: block; border-radius: 20px; outline: none; text-decoration: none;" />
+                                <img src="{{ $message->embed($logoPath) }}" alt="Clinco" width="80" style="display: block; border-radius: 20px; outline: none; text-decoration: none;" />
                             </div>
+                            @endif
                             <h1 style="color: #146b8a; font-size: 24px; font-weight: 800; margin: 8px 0 10px 0;">🌿 رمز التحقق لـ Clinco</h1>
                             <p style="color: #2f86a6; font-size: 13px; font-weight: 600; margin: 0; background-color: #e6f4f9; display: inline-block; padding: 6px 20px; border-radius: 40px;">منظومة رعاية صحية ذكية</p>
                         </td>
