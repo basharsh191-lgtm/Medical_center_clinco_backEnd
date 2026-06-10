@@ -7,7 +7,7 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
-class AdmainSeeder extends Seeder
+class AdminSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -16,7 +16,7 @@ class AdmainSeeder extends Seeder
     {
         $admins=[
         [
-        'name'=>'admain1',
+        'name'=>'admin1',
         'last_name'=>'Ali',
         'email'=>'basharalshayyah@gmail.com',
         'phone'=>'0966667777',
@@ -24,7 +24,7 @@ class AdmainSeeder extends Seeder
         'is_verified'=>1
         ],
         [
-        'name'=>'admain2',
+        'name'=>'admin2',
         'last_name'=>'Ali',
         'email'=>'ammashayyahr@gmail.com',
         'phone'=>'0955556666',

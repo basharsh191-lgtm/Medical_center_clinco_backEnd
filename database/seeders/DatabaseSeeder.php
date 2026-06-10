@@ -20,10 +20,13 @@ class DatabaseSeeder extends Seeder
         SpecializationSeeder::class,
         ClinicSeeder::class,
         DoctorSeeder::class,
-        AdmainSeeder::class,
+        AdminSeeder::class,
         ReceptionSeeder::class,
-        SchedulDoctoreSeeder::class,
+        ScheduleDoctorSeeder::class,
         AppointmentSeeder::class,
+        RatingSeeder::class,
+        MedicalRecordSeeder::class,
+        PrescriptionSeeder::class,
     ]);
 
     }

@@ -14,7 +14,7 @@ class PatientSeeder extends Seeder
      */
     public function run(): void
     {
-        $patientsData = [
+$patientsData = [
             [
                 'user_id'          => 1,
                 'birth_date'       => '1995-05-15',
@@ -24,8 +24,8 @@ class PatientSeeder extends Seeder
                 'chronic_diseases' => 'None',
                 'gender'           => 'male',
                 'address'          => 'Damascus, Syria',
-                'taller'            => 175,
-                'weight'            => 90,
+                'taller'           => 175,
+                'weight'           => 90,
             ],
             [
                 'user_id'          => 2,
@@ -36,10 +36,37 @@ class PatientSeeder extends Seeder
                 'chronic_diseases' => 'None',
                 'gender'           => 'male',
                 'address'          => 'Homs, Syria',
-                'taller'            => 165,
-                'weight'            => 80,
+                'taller'           => 165,
+                'weight'           => 80,
+            ],
+            // المريض الثالث (لطبيب الأطفال)
+            [
+                'user_id'          => 9,
+                'birth_date'       => '2018-03-10', // طفل
+                'blood_type'       => 'A+',
+                'allergies'        => 'Penicillin',
+                'hereditary'       => 'None',
+                'chronic_diseases' => 'Asthma',
+                'gender'           => 'male',
+                'address'          => 'Aleppo, Syria',
+                'taller'           => 120,
+                'weight'           => 25,
+            ],
+            // المريض الرابع (لحالة القلب والجلدية)
+            [
+                'user_id'          => 10,
+                'birth_date'       => '1970-11-22', // رجل كبير
+                'blood_type'       => 'B-',
+                'allergies'        => 'None',
+                'hereditary'       => 'Diabetes',
+                'chronic_diseases' => 'Hypertension',
+                'gender'           => 'male',
+                'address'          => 'Latakia, Syria',
+                'taller'           => 180,
+                'weight'           => 95,
             ],
         ];
+
         foreach ($patientsData as $patientData) {
             $user = User::find($patientData['user_id']);
             if ($user) {

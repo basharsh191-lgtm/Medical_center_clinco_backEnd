@@ -4,10 +4,9 @@ namespace App\Services;
 
 use App\Models\DoctorSchedule;
 use App\Models\Doctor;
-use App\Models\Reception;
+
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use ValidationException;
+
 
 class DoctorScheduleService
 {
@@ -45,7 +44,7 @@ public function createOrUpdateSchedule(array $data)
         })
         ->where(function ($query) use ($startTime, $endTime) {
             $query->where('start_time', '<', $endTime)
-                  ->where('end_time', '>', $startTime);
+                ->where('end_time', '>', $startTime);
         })
         ->exists();
 

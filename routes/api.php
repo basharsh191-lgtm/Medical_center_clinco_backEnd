@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClincController;
 use App\Http\Controllers\MedicalRecordController;
 use App\Http\Controllers\PatientController;
+use App\Http\Controllers\PrescriptionController;
 use App\Http\Controllers\RatingController;
 use App\Http\Controllers\StaffController;
 use Illuminate\Support\Facades\Route;
@@ -27,6 +28,8 @@ Route::middleware(['auth:sanctum','role:patient'])->group(function () {
     Route::put('/appointmentUpdate/{appointment}',[PatientController::class,'appointmentUpdate']);
     Route::delete('/appointmentCancel/{appointment}',[PatientController::class,'appointmentCancel']);
     Route::post('/ratings/{doctorId}',[RatingController::class,'storeRating']);
+    Route::get('patient/appointments', [PatientController::class, 'patientAppointments']);
+    Route::get('prescription/{appointment}', [PrescriptionController::class, 'getAppointmentPrescription']);
 });
 
 //عرض تقييمات الأطباء
@@ -61,8 +64,9 @@ Route::get('get/doctors/reception',[ReceptionistScheduleController::class,'getMy
 Route::post('/receptionist/check-in', [ReceptionistScheduleController::class, 'checkInByPatientQR']);
 
 });
-
+//doctor
 Route::middleware(['auth:sanctum','role:doctor'])->group(function () {
     //تخزين السجل الطبي للمريض وإغلاق الموعد
     Route::post('/storeMedicalRecord', [MedicalRecordController::class, 'storeMedicalRecord']);
+    Route::post('appointments/{appointment}/prescription', [PrescriptionController::class, 'storePrescription']);
 });
