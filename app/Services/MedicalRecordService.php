@@ -4,11 +4,15 @@ namespace App\Services;
 
 use App\Models\MedicalRecord;
 use App\Models\Appointment;
+use App\Models\Doctor;
+use App\Models\LabOrder;
+use App\Models\LabOrderTest;
 use App\Models\patient;
 use App\Models\Prescription;
 use Auth;
 use Illuminate\Support\Facades\DB;
 use Exception;
+use Illuminate\Validation\ValidationException;
 
 class MedicalRecordService
 {
@@ -109,5 +113,59 @@ class MedicalRecordService
             ]
         ];
     }
+public function createOrder(array $data)
+{
+    $user = Auth::user();
 
+    // 1. جلب بيانات الطبيب الحالي
+    $doctor = Doctor::where('user_id', $user->id)->first();
+    if (!$doctor) {
+        throw ValidationException::withMessages([
+            'doctor' => 'الحساب الحالي غير مسجل كطبيب.',
+        ]);
+    }
+
+    // 2. التحقق الأمني: هل الموعد يخص هذا الطبيب فعلاً؟
+    // افترضت هنا أن جدول المواعيد يحتوي على حقل doctor_id
+    $appointmentExists = Appointment::where('id', $data['appointment_id'])
+                                    ->where('doctor_id', $doctor->id)
+                                    ->exists();
+
+    if (!$appointmentExists) {
+        throw ValidationException::withMessages([
+            'appointment_id' => 'لا يمكنك طلب تحليل لمريض غير مسجل في مواعيدك الشخصية.',
+        ]);
+    }
+
+    // استخدام Transaction لضمان حفظ الطلب والتحاليل معاً
+    return DB::transaction(function () use ($data) {
+
+        // 3. إنشاء الطلب الرئيسي
+        $labOrder = LabOrder::create([
+            'appointment_id' => $data['appointment_id'],
+            'doctor_notes'   => $data['doctor_notes'] ?? null,
+            'overall_status' => 'pending',
+        ]);
+
+        // 4. تحضير مصفوفة التحاليل للـ Insert
+        $testsData = [];
+        $now = now(); // تعريف الوقت بره اللوب أفضل للأداء
+
+        foreach ($data['tests'] as $testName) {
+            $testsData[] = [
+                'lab_order_id' => $labOrder->id,
+                'test_name'    => $testName,
+                'status'       => 'pending',
+                'created_at'   => $now,
+                'updated_at'   => $now,
+            ];
+        }
+
+        // 5. حفظ كل التحاليل دفعة واحدة
+        LabOrderTest::insert($testsData);
+
+        // إرجاع الطلب مع تفاصيله
+        return $labOrder->load('tests');
+    });
+}
 }
