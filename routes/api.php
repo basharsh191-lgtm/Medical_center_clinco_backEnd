@@ -4,7 +4,10 @@ use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\ReceptionistScheduleController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClincController;
+use App\Http\Controllers\LabOrderController;
+use App\Http\Controllers\MedicalRecordController;
 use App\Http\Controllers\PatientController;
+use App\Http\Controllers\PrescriptionController;
 use App\Http\Controllers\RatingController;
 use App\Http\Controllers\StaffController;
 use Illuminate\Support\Facades\Route;
@@ -26,6 +29,9 @@ Route::middleware(['auth:sanctum','role:patient'])->group(function () {
     Route::put('/appointmentUpdate/{appointment}',[PatientController::class,'appointmentUpdate']);
     Route::delete('/appointmentCancel/{appointment}',[PatientController::class,'appointmentCancel']);
     Route::post('/ratings/{doctorId}',[RatingController::class,'storeRating']);
+    Route::get('/patient/appointments', [PatientController::class, 'patientAppointments']);
+    Route::get('/prescription/{appointment}', [PrescriptionController::class, 'getAppointmentPrescription']);
+    Route::get('/patient/my-labOrders', [LabOrderController::class, 'getMyLabOrders']);
 });
 
 //عرض تقييمات الأطباء
@@ -56,6 +62,16 @@ Route::middleware(['auth:sanctum','role:reception'])->group(function () {
 Route::post('store/schedule/reception',[ReceptionistScheduleController::class,'storeSchedule']);
 //جلب كل الاطباء في العيادة التي يشتغل بها الريسبشن
 Route::get('get/doctors/reception',[ReceptionistScheduleController::class,'getMyClinicDoctors']);
+//تحويل حالة الموعد من  scheduled الىarrived
+Route::post('/receptionist/check-in', [ReceptionistScheduleController::class, 'checkInByPatientQR']);
 
 });
+//doctor
+Route::middleware(['auth:sanctum','role:doctor'])->group(function () {
+    //تخزين السجل الطبي للمريض وإغلاق الموعد
+    Route::post('/storeMedicalRecord', [MedicalRecordController::class, 'storeMedicalRecord']);
+    Route::post('appointments/{appointment}/prescription', [PrescriptionController::class, 'storePrescription']);
+    Route::post('appointments/{appointment}/lab-orders', [LabOrderController::class, 'storeLabOrderDoctor']);
+    Route::delete('appointments/lab-orders/{id}', [LabOrderController::class, 'cancelLabOrder']);
 
+});

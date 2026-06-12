@@ -4,18 +4,20 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreScheduleRequest;
-use App\Models\Doctor;
 use App\Services\DoctorScheduleService;
-use Illuminate\Http\JsonResponse;
+use App\Services\ReceptionService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ReceptionistScheduleController extends Controller
 {
     protected $scheduleService;
+    protected $checkInService;
 
-    public function __construct(DoctorScheduleService $scheduleService)
+    public function __construct(DoctorScheduleService $scheduleService, ReceptionService $checkInService)
     {
         $this->scheduleService = $scheduleService;
+        $this->checkInService = $checkInService;
     }
     public function storeSchedule(StoreScheduleRequest $request)
     {
@@ -35,31 +37,50 @@ class ReceptionistScheduleController extends Controller
             ], 422);
         }
     }
-public function getMyClinicDoctors()
-{
-    try {
-        $doctors = $this->scheduleService->getClinicDoctors();
-        $formattedDoctors = $doctors->map(function ($doctor) {
-            return [
-                'doctor_id'      => $doctor->id,
-                'name'           => $doctor->user->name,
-                'last_name'      =>$doctor->user->last_name,
-                'specialization_id' => $doctor->specialization_id,
-            ];
-        });
+    public function getMyClinicDoctors()
+    {
+        try {
+            $doctors = $this->scheduleService->getClinicDoctors();
+            $formattedDoctors = $doctors->map(function ($doctor) {
+                return [
+                    'doctor_id'      => $doctor->id,
+                    'name'           => $doctor->user->name,
+                    'last_name'      =>$doctor->user->last_name,
+                    'specialization_id' => $doctor->specialization_id,
+                ];
+            });
 
-        return response()->json([
-            'success' => true,
-            'message' => 'تم جلب أطباء العيادة بنجاح.',
-            'data'    => $formattedDoctors
-        ], 200);
+            return response()->json([
+                'success' => true,
+                'message' => 'تم جلب أطباء العيادة بنجاح.',
+                'data'    => $formattedDoctors
+            ], 200);
 
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => $e->getMessage(),
-            'data'    => null
-        ], 403);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data'    => null
+            ], 403);
+        }
     }
-}
+    public function checkInByPatientQR(Request $request)
+        {
+            $request->validate([
+                'qr_token' => 'required|uuid|exists:patients,qr_token',
+            ]);
+            $user = Auth::user()->load('reception');
+            if (!$user->reception) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'هذا المستخدم ليس موظف استقبال أو غير مرتبط بعيادة.'
+                ], 400);
+            }
+            $receptionistClinicId = $user->reception->clinic_id;
+            $appointment = $this->checkInService->checkInByQr($request->qr_token, $receptionistClinicId);
+            return response()->json([
+                'status' => 'success',
+                'message' => 'تم تسجيل وصول المريض بنجاح وتحديث الحالة.',
+            ]);
+    }
 }

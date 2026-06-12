@@ -76,6 +76,11 @@ public function appointmentCancel(Appointment $appointment)
 
     return response()->json($result['response'], $result['status_code']);
 }
+public function patientAppointments()
+    {
+        $result = $this->PatientService->getAllAppointments();
+        return response()->json($result['response'], $result['status_code']);
+    }
 }
 
 

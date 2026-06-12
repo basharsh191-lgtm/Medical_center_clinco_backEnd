@@ -21,6 +21,7 @@ class UserSeeder extends Seeder
         'email'=>'bashar@gmail.com',
         'phone'=>'0969551428',
         'password' => Hash::make('12345678'),
+        'is_verified'=>1
         ],
         [
         'name'=>'ammar',
@@ -28,6 +29,7 @@ class UserSeeder extends Seeder
         'email'=>'ammar@gmail.com',
         'phone'=>'0981498112',
         'password' => Hash::make('12345678'),
+        'is_verified'=>1
         ],
         [
         'name'=>'mohamad',
@@ -35,6 +37,7 @@ class UserSeeder extends Seeder
         'email'=>'mohamad@gmail.com',
         'phone'=>'0999459200',
         'password' => Hash::make('12345678'),
+        'is_verified'=>1
         ],
         [
         'name'=>'jad',
@@ -84,6 +87,21 @@ class UserSeeder extends Seeder
         'last_name'=>'Ali',
         'email'=>'yaraAli@gmail.com',
         'phone'=>'0986552328',
+        'password' => Hash::make('12345678'),
+        'is_verified'=>1
+        ],
+        ['name'=>'jad',
+        'last_name'=>'Ali',
+        'email'=>'jadAli@gmail.com',
+        'phone'=>'0986552338',
+        'password' => Hash::make('12345678'),
+        'is_verified'=>1
+        ],
+        [
+        'name'=>'omar',
+        'last_name'=>'Ali',
+        'email'=>'omarAli@gmail.com',
+        'phone'=>'0986552348',
         'password' => Hash::make('12345678'),
         'is_verified'=>1
         ],
