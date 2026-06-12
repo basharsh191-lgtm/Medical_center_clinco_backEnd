@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
         RatingSeeder::class,
         MedicalRecordSeeder::class,
         PrescriptionSeeder::class,
+        LabOrderSeeder::class,
     ]);
 
     }
