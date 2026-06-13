@@ -13,6 +13,7 @@ use App\UploadFileTrait;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Str;
 
 class PatientController extends Controller
 {
@@ -80,6 +81,22 @@ public function patientAppointments()
     {
         $result = $this->PatientService->getAllAppointments();
         return response()->json($result['response'], $result['status_code']);
+    }
+    public function getMyQrData()
+    {
+        $patient = Auth::user()->patient;
+
+        if (!$patient->qr_token) {
+            $patient->update(['qr_token' => Str::uuid()]);
+        }
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'تم جلب بيانات الـ QR بنجاح',
+            'data'    => [
+                'qr_string' => $patient->qr_token
+            ]
+        ]);
     }
 }
 

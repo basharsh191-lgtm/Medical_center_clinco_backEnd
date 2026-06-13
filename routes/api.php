@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AppointmentController;
+use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\ReceptionistScheduleController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClincController;
@@ -29,9 +30,14 @@ Route::middleware(['auth:sanctum','role:patient'])->group(function () {
     Route::put('/appointmentUpdate/{appointment}',[PatientController::class,'appointmentUpdate']);
     Route::delete('/appointmentCancel/{appointment}',[PatientController::class,'appointmentCancel']);
     Route::post('/ratings/{doctorId}',[RatingController::class,'storeRating']);
-    Route::get('/patient/appointments', [PatientController::class, 'patientAppointments']);
+    Route::get('/patient/getAppointments', [PatientController::class, 'patientAppointments']);
     Route::get('/prescription/{appointment}', [PrescriptionController::class, 'getAppointmentPrescription']);
     Route::get('/patient/my-labOrders', [LabOrderController::class, 'getMyLabOrders']);
+    Route::post('/attachments', [AttachmentController::class, 'storeAttachments']);
+    Route::get('/patient/my-medical-history', [MedicalRecordController::class, 'getMyMedicalHistory']);
+    Route::get('/patient/my-attachments', [AttachmentController::class, 'getMyAttachments']);
+    Route::get('/qr-token-for-my', [PatientController::class, 'getMyQrData']);
+
 });
 
 //عرض تقييمات الأطباء
@@ -45,7 +51,7 @@ Route::get('/showClinic/{id}',[ClincController::class,'showClinic']);
 Route::get('/showDoctor/{id}',[ClincController::class,'showDoctor']);
 //عرض اوقات المتاحة للطبيب
 Route::get('doctors/{doctor}/available-slots', [AppointmentController::class, 'getAvailableSlots']);
-
+Route::get('/clinics-with-doctors', [ClincController::class, 'getClinicsWithDoctors']);
 
 //admain
 Route::middleware(['auth:sanctum','role:super_admin'])->group(function () {

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreMedicalRecordRequest;
 use App\Models\Appointment;
+use App\Models\MedicalRecord;
 use App\Services\MedicalRecordService;
 use Auth;
 use Illuminate\Http\Request;
@@ -57,5 +58,28 @@ class MedicalRecordController extends Controller
             'message' => 'تم حفظ السجل الطبي للمريض بنجاح، وإغلاق الموعد.',
             'data'    => $record
         ], 201);
+    }
+   public function getMyMedicalHistory()
+    {
+        // 1. جلب رقم المريض من التوكن بكل أمان
+        $patientId = Auth::user()->patient->id;
+
+        // 2. جلب السجلات الطبية مع العلاقات المطلوبة (Eager Loading)
+        $history = MedicalRecord::with([
+            'doctor.user:id,name', // جلب اسم الدكتور فقط لتخفيف حجم الداتا
+            'appointment:id,appointment_date', // جلب تاريخ الموعد
+            // إذا كنت رابط الوصفات أو المرفقات بالسجل أو بالموعد، بتجيبهم هون
+            'appointment.attachments',
+        ])
+        ->where('patient_id', $patientId)
+        ->orderBy('created_at', 'desc') // أحدث زيارة أولاً
+        ->get();
+
+        // 3. ترتيب البيانات وإرسالها للموبايل
+        return response()->json([
+            'status' => 'success',
+            'message' => 'تم جلب السجل الطبي بنجاح',
+            'data' => $history
+        ]);
     }
 }
