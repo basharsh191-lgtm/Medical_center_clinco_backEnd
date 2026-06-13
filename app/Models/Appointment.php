@@ -31,4 +31,8 @@ class Appointment extends Model
     {
         return $this->hasMany(LabOrder::class);
     }
+    public function attachments()
+    {
+        return $this->hasMany(Attachment::class);
+    }
 }
