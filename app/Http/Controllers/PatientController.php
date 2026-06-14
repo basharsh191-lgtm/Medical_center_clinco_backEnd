@@ -94,7 +94,7 @@ public function patientAppointments()
             'status'  => 'success',
             'message' => 'تم جلب بيانات الـ QR بنجاح',
             'data'    => [
-                'qr_string' => $patient->qr_token
+            'qr_string' => $patient->qr_token
             ]
         ]);
     }

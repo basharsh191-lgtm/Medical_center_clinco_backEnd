@@ -30,61 +30,22 @@ public function storeReception(ReceptionRequest $request)
 }
 public function storeDoctor(DoctorRequest $request)
 {
+    $validatedData = $request->validated();
     if ($request->hasFile('image')) {
-    $path = $this->upload($request->file('image'), 'doctor_picture', 'public');
-    $validated['image'] = $path;
+        $path = $this->upload($request->file('image'), 'doctor_picture', 'public');
+        $validatedData['image'] = url('storage/' . $path);
     } else {
-        $validated['image'] = null;
+        $validatedData['image'] = null;
     }
     $doctor = $this->staffService->createStaff(
-        $request->validated(),
+        $validatedData,
         'doctor'
     );
-
     return response()->json([
         'message' => 'Doctor created successfully',
         'data' => $doctor,
-        'image_url' => $path ? asset('storage/' . $path) : null
-            ], 201);
+        'image_url' => $validatedData['image']
+    ], 201);
 }
-// public function storeDoctors(DoctorRequest $request)
-// {
-//     // 1. استخراج البيانات المفحوصة في مصفوفة أولاً لنستطيع التعديل عليها
-//     $validatedData = $request->validated();
-
-//     // 2. استقبال اسم السيرفر (مع استخدام public كافتراضي)
-//     $diskName = $request->storage_disk ?? 'public';
-
-//     $path = null;
-//     $imageUrl = null;
-
-//     if ($request->hasFile('image')) {
-//         // 3. تمرير اسم السيرفر الديناميكي لدالة الرفع الخاصة بك
-//         $path = $this->upload($request->file('image'), 'doctor_picture', $diskName);
-
-//         // تحديث مسار الصورة داخل المصفوفة
-//         $validatedData['image'] = $path;
-
-//         // (خطوة هندسية): إذا أضفت حقل image_disk لجدول الأطباء لحفظ مكان الصورة
-//         // $validatedData['image_disk'] = $diskName;
-
-//         // توليد الرابط الديناميكي
-//         $imageUrl = \Illuminate\Support\Facades\Storage::disk($diskName)->url($path);
-//     } else {
-//         $validatedData['image'] = null;
-//     }
-
-//     // 4. تمرير المصفوفة المعدلة ($validatedData) إلى الـ Service
-//     $doctor = $this->staffService->createStaff(
-//         $validatedData,
-//         'doctor'
-//     );
-
-//     return response()->json([
-//         'message'   => 'Doctor created successfully',
-//         'data'      => $doctor,
-//         'image_url' => $imageUrl
-//     ], 201);
-// }
 }
 

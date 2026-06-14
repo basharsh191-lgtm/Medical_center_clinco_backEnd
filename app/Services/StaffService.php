@@ -43,15 +43,15 @@ class StaffService
     }
     private function createDoctorProfile($user, array $data)
     {
-        $imagePath = $data['image']->store('doctor_picture', 'public');
+        // تم حذف كود الرفع من هنا لأن الكنترولر قام بالوظيفة مسبقاً
 
         $user->doctorProfile()->create([
             'specialization_id' => $data['specialization_id'],
             'clinic_id'         => $data['clinic_id'],
             'experience_years'  => $data['experience_years'] ?? 0,
-            'number_operations'  => $data['number_operations'] ?? 0,
+            'number_operations' => $data['number_operations'] ?? 0,
             'bio'               => $data['bio'] ?? null,
-            'image'             => $imagePath,
+            'image'             => $data['image'] ?? null, // هنا سيتم تخزين الرابط الكامل
         ]);
     }
     private function createReceptionProfile($user, array $data)
