@@ -37,4 +37,8 @@ class patient extends Model
     {
         return $this->hasMany(MedicalRecord::class);
     }
+    public function favoriteDoctors()
+{
+    return $this->belongsToMany(Doctor::class, 'favorites');
+}
 }

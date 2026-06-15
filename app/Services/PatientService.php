@@ -113,4 +113,100 @@ public function getAllAppointments()
             ]
         ];
 }
+public function updatePatient(Patient $patient, array $data)
+{
+        $patient->update($data);
+        return $patient->refresh();
+}
+// جلب الأطباء المفضليين مع بياناتهم الأساسية وتخصصاتهم
+public function getFavoriteDoctors(Patient $patient)
+{
+    return $patient->favoriteDoctors()
+        ->with(['user:id,name', 'speciality:id,specialization_name'])
+        ->get();
+}
+// عمل إضافة أو حذف تلقائي للطبيب من المفضلة
+public function toggleDoctorFavorite(Patient $patient, \App\Models\Doctor $doctor): array
+{
+    try {
+        $result = $patient->favoriteDoctors()->toggle($doctor->id);
+
+        if (count($result['attached']) > 0) {
+            $message = 'تم إضافة الطبيب إلى المفضلة بنجاح.';
+            $isFavorite = true;
+        } else {
+            $message = 'تم إزالة الطبيب من المفضلة بنجاح.';
+            $isFavorite = false;
+        }
+
+        return [
+            'status_code' => 200,
+            'response' => [
+                'success'     => true,
+                'message'     => $message,
+                'is_favorite' => $isFavorite // مفيد جداً للفلاتر لتحديث شكل زر القلب فوراً
+            ]
+        ];
+
+    } catch (\Exception $e) {
+        return [
+            'status_code' => 500,
+            'response' => [
+                'success' => false,
+                'message' => 'حدث خطأ أثناء تعديل المفضلة.',
+                'error'   => $e->getMessage()
+            ]
+        ];
+    }
+}
+public function getNextAppointment(Patient $patient)
+{
+    $now = now();
+
+    $nextAppointment = Appointment::with([
+            // جلب بيانات الطبيب وتخصصه وعيادته لكي نعرضها في بطاقة التذكير
+            'doctor.user:id,name',
+            'doctor.speciality:id,specialization_name',
+            'clinic:id,clinic_name'
+        ])
+        ->where('patient_id', $patient->id)
+        ->where('status', 'scheduled') // فقط المواعيد المحجوزة
+        ->where(function ($query) use ($now) {
+            // إما أن يكون الموعد في الأيام القادمة
+            $query->where('appointment_date', '>', $now->toDateString())
+                  // أو أن يكون الموعد اليوم، ولكن وقته لم يأتِ بعد
+                  ->orWhere(function ($q) use ($now) {
+                      $q->where('appointment_date', '=', $now->toDateString())
+                        ->where('start_time', '>=', $now->toTimeString());
+                  });
+        })
+        // الترتيب تصاعدياً حسب التاريخ ثم الوقت لنجلب "الأقرب"
+        ->orderBy('appointment_date', 'asc')
+        ->orderBy('start_time', 'asc')
+        ->first(); // جلب أول نتيجة فقط
+
+    // إذا لم يكن لديه مواعيد قادمة
+    if (!$nextAppointment) {
+        return [
+            'status_code' => 200,
+            'response' => [
+                'success' => true,
+                'message' => 'لا يوجد لديك مواعيد قادمة.',
+                'data'    => null
+            ]
+        ];
+    }
+
+    // إخفاء الحقول غير الضرورية للفرونت إند لتنظيف الـ JSON
+    $nextAppointment->makeHidden(['created_at', 'updated_at']);
+
+    return [
+        'status_code' => 200,
+        'response' => [
+            'success' => true,
+            'message' => 'تم جلب أقرب موعد بنجاح.',
+            'data'    => $nextAppointment
+        ]
+    ];
+}
 }

@@ -25,6 +25,7 @@ Route::post('/resendOtp',[AuthController::class,'resendOtp']);
 //patient
 Route::middleware(['auth:sanctum','role:patient'])->group(function () {
     Route::post('/storePatient', [PatientController::class, 'storePatient']);
+    Route::put('patients/update', [PatientController::class, 'updatePatient']);
     Route::get('/showPatient',[PatientController::class,'showPatient']);
     Route::post('/appointmentStore',[PatientController::class,'appointmentStore']);
     Route::put('/appointmentUpdate/{appointment}',[PatientController::class,'appointmentUpdate']);
@@ -37,6 +38,9 @@ Route::middleware(['auth:sanctum','role:patient'])->group(function () {
     Route::get('/patient/my-medical-history', [MedicalRecordController::class, 'getMyMedicalHistory']);
     Route::get('/patient/my-attachments', [AttachmentController::class, 'getMyAttachments']);
     Route::get('/qr-token-for-my', [PatientController::class, 'getMyQrData']);
+    Route::get('patient/favorites', [PatientController::class, 'getFavorites']);
+    Route::post('doctors/{doctor}/favorite', [PatientController::class, 'toggleFavorite']);
+    Route::get('patient/appointments/next', [PatientController::class, 'getNextAppointment']);
 
 });
 
