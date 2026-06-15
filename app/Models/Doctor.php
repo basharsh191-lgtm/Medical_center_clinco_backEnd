@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use ParentIterator;
 
 class Doctor extends Model
 {
@@ -13,7 +14,7 @@ class Doctor extends Model
     }
     public function speciality()
     {
-        return $this->belongsTo(Specialization::class);
+        return $this->belongsTo(Specialization::class, 'specialization_id');
     }
     public function clinic()
     {
@@ -46,4 +47,8 @@ class Doctor extends Model
     {
         return $this->hasMany(MedicalRecord::class);
     }
-}
+    public function favoriteByPatients()
+    {
+        return $this->belongsToMany(Patient::class, 'favorites');
+    }
+    }
