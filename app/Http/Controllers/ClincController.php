@@ -15,6 +15,13 @@ class ClincController extends Controller
             'clinic' => $clinic,
         ], 200);
     }
+public function showClinicAll()
+{
+    $clinics = Clinic::all();
+    return response()->json([
+        'clinics' => $clinics,
+    ], 200);
+}
     public function showDoctor($id)
     {
         $doctor=Doctor::with('user')->findOrFail($id);
