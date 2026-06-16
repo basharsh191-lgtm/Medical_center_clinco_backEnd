@@ -19,9 +19,9 @@ class ReceptionistScheduleController extends Controller
         $this->scheduleService = $scheduleService;
         $this->checkInService = $checkInService;
     }
-    public function storeSchedule(StoreScheduleRequest $request)
+public function storeSchedule(StoreScheduleRequest $request)
     {
-            $validated = $request->validated();
+        $validated = $request->validated();
         try {
             $schedule = $this->scheduleService->createOrUpdateSchedule($validated);
             return response()->json([
@@ -30,11 +30,14 @@ class ReceptionistScheduleController extends Controller
                 'data'    => $schedule
             ], 201);
         } catch (\Exception $e) {
+            // استخدام الكود 403 أو 422 حسب نوع الخطأ المرمي من الخدمة
+            $statusCode = $e->getCode() >= 400 ? $e->getCode() : 422;
+
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
                 'data'    => null
-            ], 422);
+            ], $statusCode);
         }
     }
     public function getMyClinicDoctors()

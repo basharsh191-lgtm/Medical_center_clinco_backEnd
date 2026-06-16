@@ -14,7 +14,7 @@ class ScheduleDoctorSeeder extends Seeder
      */
 public function run(): void
     {
-     $doctors = Doctor::all();
+        $doctors = Doctor::all();
 
         if ($doctors->isEmpty()) {
             $this->command->warn('تنبيه: لم يتم العثور على أطباء في قاعدة البيانات، يرجى ملء جدول الأطباء أولاً.');
@@ -24,18 +24,31 @@ public function run(): void
         // الأيام التي سنوزع فيها الدوام
         $days = ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'];
 
-        // حلقة تكرار تقليدية وواضحة جداً لكل طبيب ولكل يوم
         foreach ($doctors as $doctor) {
             foreach ($days as $day) {
+
+                // 1. تحديد نوع الدوام عشوائياً (كررنا clinic لتكون الاحتمالية الأكبر)
+                $scheduleType = fake()->randomElement(['clinic', 'clinic', 'home_visit', 'both']);
+
+                // 2. تحديد مدة الجلسة برمجياً بناءً على نوع الدوام
+                $duration = match($scheduleType) {
+                    'home' => 60,  // ساعة كاملة للزيارة المنزلية (تشمل الفحص + وقت الطريق)
+                    'both' => 45,  // 45 دقيقة كحل وسط إذا كان اليوم يدمج بين الاثنين
+                    default => 30, // 30 دقيقة كافتراضي للعيادة فقط
+                };
+
                 DoctorSchedule::create([
                     'doctor_id'            => $doctor->id,
                     'day'                  => $day,
-                    'start_time'           => '09:00:00', // الدوام يبدأ 9 صباحاً
-                    'end_time'             => '17:00:00', // وينتهي 5 عصراً
-                    'appointment_duration' => 30,         // مدة الجلسة 30 دقيقة
+                    'start_time'           => '09:00:00',
+                    'end_time'             => '17:00:00',
+                    'appointment_duration' => $duration,       // استخدام المدة الديناميكية
+                    'schedule_type'        => $scheduleType,   // الحقل الجديد الذي أضفناه للـ Migration
                     'is_active'            => true,
                 ]);
             }
         }
+
+        $this->command->info('تم زراعة جداول الأطباء (عيادات وزيارات منزلية) بنجاح!');
     }
 }

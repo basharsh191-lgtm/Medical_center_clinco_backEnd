@@ -23,11 +23,12 @@ class StoreScheduleRequest extends FormRequest
     {
         return [
             'doctor_id'            => 'required|exists:doctors,id',
-            'day' => 'required|in:السبت,الأحد,الإثنين,الثلاثاء,الأربعاء,الخميس,الجمعة',
+            'day'                  => 'required|in:السبت,الأحد,الإثنين,الثلاثاء,الأربعاء,الخميس,الجمعة',
             'start_time'           => 'required|date_format:H:i',
             'end_time'             => 'required|date_format:H:i|after:start_time',
             'appointment_duration' => 'nullable|integer|min:5|max:120',
             'is_active'            => 'nullable|boolean',
+            'schedule_type'        => 'required|in:clinic,home_visit,both', // الحقل الجديد
         ];
     }
 }
