@@ -10,11 +10,18 @@ class ClincController extends Controller
 {
     public function showClinic($id)
     {
-        $clinic = Clinic::with('doctor')->findOrFail($id);
+        $clinic = Clinic::with('doctors')->findOrFail($id);
         return response()->json([
             'clinic' => $clinic,
         ], 200);
     }
+public function showClinicAll()
+{
+    $clinics = Clinic::all();
+    return response()->json([
+        'clinics' => $clinics,
+    ], 200);
+}
     public function showDoctor($id)
     {
         $doctor=Doctor::with('user')->findOrFail($id);

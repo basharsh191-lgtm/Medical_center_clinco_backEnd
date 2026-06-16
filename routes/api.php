@@ -51,6 +51,8 @@ Route::get('/showDoctorRatings/{id}', [RatingController::class, 'showDoctorRatin
 //show home page
 //استدعاء العيادة مع دكاترتها
 Route::get('/showClinic/{id}',[ClincController::class,'showClinic']);
+Route::get('/showClinicAll',[ClincController::class,'showClinicAll']);
+
 //عرض بروفايل دكتور معين
 Route::get('/showDoctor/{id}',[ClincController::class,'showDoctor']);
 //عرض اوقات المتاحة للطبيب
