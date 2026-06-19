@@ -22,11 +22,13 @@ public function showClinicAll()
         'clinics' => $clinics,
     ], 200);
 }
-    public function showDoctor($id)
-    {
-        $doctor=Doctor::with('user')->findOrFail($id);
-        return response()->json($doctor, 200);
-    }
+public function showDoctor($id)
+{
+    $doctor = Doctor::with(['user', 'speciality'])->findOrFail($id);
+    $doctor->ratings_avg_stars = $doctor->averageRating();
+
+    return response()->json($doctor, 200);
+}
 public function getClinicsWithDoctors()
 {
     $clinics = Clinic::with(['doctors' => function($query) {

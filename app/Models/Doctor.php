@@ -28,7 +28,7 @@ class Doctor extends Model
     // طريقة لجلب الجداول النشطة فقط
     public function activeSchedules()
     {
-        return $this->hasMany(DoctorSchedule::class)->where('is_active', true);
+        return $this->hasMany(DoctorSchedule::class);
     }
     public function appointments()
     {
