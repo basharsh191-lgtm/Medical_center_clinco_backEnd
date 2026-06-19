@@ -19,7 +19,7 @@ public function createOrUpdateSchedule(array $data)
         $day = $data['day'];
         $startTime = $data['start_time'];
         $endTime = $data['end_time'];
-        $scheduleType = $data['schedule_type']; // استقبال نوع الدوام
+        $scheduleType = $data['schedule_type'];
 
         $receptionist = Auth::user()->reception;
 

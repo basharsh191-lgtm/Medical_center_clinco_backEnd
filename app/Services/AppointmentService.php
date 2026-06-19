@@ -16,57 +16,60 @@ class AppointmentService
      * @param string $date (Format: Y-m-d)
      * @return array
      */
-    public function generateAvailableSlots(int $doctorId, string $date): array
-    {
-        $carbonDate = Carbon::parse($date);
-        $dayNameEn = $carbonDate->format('l');
-        $dayNameAr = $this->translateDayToArabic($dayNameEn);
+public function generateAvailableSlots(int $doctorId, string $date): array
+{
+    $carbonDate = Carbon::parse($date);
+    $dayNameEn = $carbonDate->format('l');
+    $dayNameAr = $this->translateDayToArabic($dayNameEn);
 
-        $schedule = DoctorSchedule::where('doctor_id', $doctorId)
-            ->where('day', $dayNameAr)
-            ->where('is_active', true)
-            ->first();
+    $schedule = DoctorSchedule::where('doctor_id', $doctorId)
+        ->where('day', $dayNameAr)
+        ->where('is_active', true)
+        ->first();
 
-        if (!$schedule) {
-            return [];
-        }
-
-        $bookedAppointments = Appointment::where('doctor_id', $doctorId)
-            ->where('appointment_date', $date)
-            ->whereIn('status', ['scheduled', 'confirmed', 'arrived', 'no_show'])
-            ->get(['start_time', 'end_time']);
-
-        $slots = [];
-
-        // دمج التاريخ المختار مع وقت بداية ونهاية الدوام للمقارنة الزمنية
-        $startTime = Carbon::parse($date . ' ' . $schedule->start_time);
-        $endTime = Carbon::parse($date . ' ' . $schedule->end_time);
-        $duration = $schedule->appointment_duration;
-
-        while ($startTime->copy()->addMinutes($duration)->lte($endTime)) {
-            $slotStart = $startTime->copy();
-            $slotEnd = $startTime->copy()->addMinutes($duration);
-
-            // فحص التداخل
-            $isBooked = $bookedAppointments->contains(function ($appointment) use ($slotStart, $slotEnd, $date) {
-                // ندمج تاريخ اليوم المرسل مع وقت الحجز المخزن بقاعدة البيانات لتصبح المقارنة دقيقة كـ DateTime
-                $appointmentStart = Carbon::parse($date . ' ' . $appointment->start_time);
-                $appointmentEnd = Carbon::parse($date . ' ' . $appointment->end_time);
-
-                return $slotStart->lt($appointmentEnd) && $slotEnd->gt($appointmentStart);
-            });
-
-            $slots[] = [
-                'start_time'   => $slotStart->format('H:i'),
-                'end_time'     => $slotEnd->format('H:i'),
-                'is_available' => !$isBooked,
-            ];
-
-            $startTime->addMinutes($duration);
-        }
-
-        return $slots;
+    if (!$schedule) {
+        return [];
     }
+
+    $bookedAppointments = Appointment::where('doctor_id', $doctorId)
+        ->where('appointment_date', $date)
+        ->whereIn('status', ['scheduled', 'confirmed', 'arrived', 'no_show'])
+        ->get(['start_time', 'end_time']);
+
+    $slots = [];
+
+    // دمج التاريخ المختار مع وقت بداية ونهاية الدوام للمقارنة الزمنية
+    $startTime = Carbon::parse($date . ' ' . $schedule->start_time);
+    $endTime = Carbon::parse($date . ' ' . $schedule->end_time);
+    $duration = $schedule->appointment_duration;
+
+    while ($startTime->copy()->addMinutes($duration)->lte($endTime)) {
+        $slotStart = $startTime->copy();
+        $slotEnd = $startTime->copy()->addMinutes($duration);
+
+        // فحص التداخل
+        $isBooked = $bookedAppointments->contains(function ($appointment) use ($slotStart, $slotEnd, $date) {
+            $appointmentStart = Carbon::parse($date . ' ' . $appointment->start_time);
+            $appointmentEnd = Carbon::parse($date . ' ' . $appointment->end_time);
+
+            return $slotStart->lt($appointmentEnd) && $slotEnd->gt($appointmentStart);
+        });
+
+        $slots[] = [
+            'start_time'   => $slotStart->format('H:i'),
+            'end_time'     => $slotEnd->format('H:i'),
+            'is_available' => !$isBooked,
+        ];
+
+        $startTime->addMinutes($duration);
+    }
+
+    // تعديل هنا: نعيد نوع الجدول والـ slots معاً
+    return [
+        'schedule_type' => $schedule->schedule_type,
+        'slots'         => $slots
+    ];
+}
     private function translateDayToArabic(string $dayNameEn): string
     {
         $days = [

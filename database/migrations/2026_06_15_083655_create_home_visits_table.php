@@ -13,9 +13,9 @@ return new class extends Migration
     {
 Schema::create('home_visits', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('patient_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('doctor_id')->nullable()->constrained('users')->cascadeOnDelete();
-            $table->foreignId('receptionist_id')->nullable()->constrained('users')->cascadeOnDelete();
+            $table->foreignId('patient_id')->constrained('patients')->cascadeOnDelete();
+            $table->foreignId('doctor_id')->nullable()->constrained('doctors')->cascadeOnDelete();
+            $table->foreignId('receptions_id')->nullable()->constrained('receptions')->cascadeOnDelete();
             $table->foreignId('specialization_id')->constrained('specializations')->cascadeOnDelete();
             $table->dateTime('visit_date');
             $table->decimal('location_lat', 10, 8);

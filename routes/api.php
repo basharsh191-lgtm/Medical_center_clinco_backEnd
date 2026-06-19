@@ -5,6 +5,7 @@ use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\ReceptionistScheduleController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClincController;
+use App\Http\Controllers\HomeVisitController;
 use App\Http\Controllers\LabOrderController;
 use App\Http\Controllers\MedicalRecordController;
 use App\Http\Controllers\PatientController;
@@ -41,7 +42,7 @@ Route::middleware(['auth:sanctum','role:patient'])->group(function () {
     Route::get('patient/favorites', [PatientController::class, 'getFavorites']);
     Route::post('doctors/{doctor}/favorite', [PatientController::class, 'toggleFavorite']);
     Route::get('patient/appointments/next', [PatientController::class, 'getNextAppointment']);
-
+    Route::post('storeRequestVisit', [HomeVisitController::class, 'storeRequest']);
 });
 
 //عرض تقييمات الأطباء

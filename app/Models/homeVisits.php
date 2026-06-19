@@ -4,8 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class homeVisits extends Model
+class HomeVisits extends Model
 {
-protected $guarded = [];
-
+    protected $guarded = [];
 }
