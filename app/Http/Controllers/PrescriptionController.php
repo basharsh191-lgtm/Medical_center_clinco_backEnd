@@ -51,11 +51,4 @@ class PrescriptionController extends Controller
 
         return response()->json($result['response'], $result['status_code']);
     }
-    public function getAppointmentPrescription(Appointment $appointment)
-    {
-        // استدعاء اللوجيك من الـ Service
-        $result = $this->medicalRecordService->getPrescriptionByAppointment($appointment);
-
-        return response()->json($result['response'], $result['status_code']);
-    }
 }

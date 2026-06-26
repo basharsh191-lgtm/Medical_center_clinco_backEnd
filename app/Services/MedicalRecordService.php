@@ -74,45 +74,6 @@ class MedicalRecordService
             ];
         }
     }
-    public function getPrescriptionByAppointment(Appointment $appointment)
-    {
-        $user = Auth::user();
-        $patient = patient::where('user_id', $user->id)->first();
-
-        if (!$patient || $appointment->patient_id !== $patient->id) {
-            return [
-                'status_code' => 403,
-                'response'    => [
-                    'success' => false,
-                    'message' => 'غير مصرح لك باستعراض بيانات هذا الموعد.'
-                ]
-            ];
-        }
-
-        $prescription = Prescription::with(['items:id,prescription_id,medicine_name,dosage,frequency,duration'])
-            ->where('appointment_id', $appointment->id)
-            ->first();
-
-        // 3. إذا كان الموعد لا يحتوي على روشتة بعد (مثلاً موعد قادم أو لم يكتب الطبيب روشتة)
-        if (!$prescription) {
-            return [
-                'status_code' => 404,
-                'response'    => [
-                    'success' => false,
-                    'message' => 'لا توجد روشتة طبية مسجلة لهذا الموعد حتى الآن.'
-                ]
-            ];
-        }
-        $prescription->makeHidden(['created_at', 'updated_at', 'appointment_id']);
-        return [
-            'status_code' => 200,
-            'response'    => [
-                'success' => true,
-                'message' => 'تم جلب تفاصيل الروشتة بنجاح.',
-                'data'    => $prescription
-            ]
-        ];
-    }
 public function createOrder(array $data)
 {
     $user = Auth::user();
