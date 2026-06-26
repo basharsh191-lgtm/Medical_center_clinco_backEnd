@@ -5,11 +5,14 @@ use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\ReceptionistScheduleController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClincController;
+use App\Http\Controllers\DoctorHomeVisitController;
+use App\Http\Controllers\HomeVisitController;
 use App\Http\Controllers\LabOrderController;
 use App\Http\Controllers\MedicalRecordController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PrescriptionController;
 use App\Http\Controllers\RatingController;
+use App\Http\Controllers\ReceptionHomeVisitController;
 use App\Http\Controllers\StaffController;
 use Illuminate\Support\Facades\Route;
 
@@ -41,6 +44,12 @@ Route::middleware(['auth:sanctum','role:patient'])->group(function () {
     Route::get('patient/favorites', [PatientController::class, 'getFavorites']);
     Route::post('doctors/{doctor}/favorite', [PatientController::class, 'toggleFavorite']);
     Route::get('patient/appointments/next', [PatientController::class, 'getNextAppointment']);
+
+    //visit home
+    Route::post('/request-home-visit', [HomeVisitController::class, 'requestHomeVisit']);
+    Route::get('/patient/home-visits', [HomeVisitController::class, 'getPatientHomeVisits']);
+    Route::put('/update-home-visit/{id}', [HomeVisitController::class, 'updateHomeVisit']);
+    Route::delete('/cancel-home-visit/{id}', [HomeVisitController::class, 'cancelHomeVisit']);
 
 });
 
@@ -77,6 +86,13 @@ Route::get('get/doctors/reception',[ReceptionistScheduleController::class,'getMy
 //تحويل حالة الموعد من  scheduled الىarrived
 Route::post('/receptionist/check-in', [ReceptionistScheduleController::class, 'checkInByPatientQR']);
 
+//home visit
+Route::get('/show-home-visits', [ReceptionHomeVisitController::class, 'getClinicHomeVisits']);
+Route::post('/approve-home-visit/{id}', [ReceptionHomeVisitController::class, 'approveAndAssignDoctor']);
+Route::post('/reject-home-visit/{id}', [ReceptionHomeVisitController::class, 'rejectVisit']);
+
+
+
 });
 //doctor
 Route::middleware(['auth:sanctum','role:doctor'])->group(function () {
@@ -85,5 +101,9 @@ Route::middleware(['auth:sanctum','role:doctor'])->group(function () {
     Route::post('appointments/{appointment}/prescription', [PrescriptionController::class, 'storePrescription']);
     Route::post('appointments/{appointment}/lab-orders', [LabOrderController::class, 'storeLabOrderDoctor']);
     Route::delete('appointments/lab-orders/{id}', [LabOrderController::class, 'cancelLabOrder']);
+
+    //visit home
+    //Route::get('/doctor-assigned-visits', [DoctorHomeVisitController::class, 'getDoctorAssignedVisits']);
+
 
 });
