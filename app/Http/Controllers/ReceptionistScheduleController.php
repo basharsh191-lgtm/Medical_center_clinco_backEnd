@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreScheduleRequest;
+use App\Models\HomeVisit;
 use App\Services\DoctorScheduleService;
 use App\Services\ReceptionService;
 use Illuminate\Http\Request;
@@ -83,4 +84,5 @@ class ReceptionistScheduleController extends Controller
                 'message' => 'تم تسجيل وصول المريض بنجاح وتحديث الحالة.',
             ]);
     }
+
 }
