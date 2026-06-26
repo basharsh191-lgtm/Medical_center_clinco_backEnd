@@ -15,9 +15,9 @@ Schema::create('home_visits', function (Blueprint $table) {
             $table->id();
             $table->foreignId('patient_id')->constrained('patients')->cascadeOnDelete();
             $table->foreignId('doctor_id')->nullable()->constrained('doctors')->cascadeOnDelete();
-            $table->foreignId('receptions_id')->nullable()->constrained('receptions')->cascadeOnDelete();
-            $table->foreignId('specialization_id')->constrained('specializations')->cascadeOnDelete();
             $table->dateTime('visit_date');
+            $table->time('start_time');
+            $table->time('end_time');
             $table->decimal('location_lat', 10, 8);
             $table->decimal('location_lng', 11, 8);
             $table->enum('status', ['pending', 'assigned', 'on_the_way', 'completed', 'cancelled'])->default('pending');

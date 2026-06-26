@@ -15,4 +15,8 @@ class Specialization extends Model
     {
         return $this->hasOne(Doctor::class);
     }
+    public function homeVisits()
+    {
+        return $this->hasMany(HomeVisits::class);
+    }
 }

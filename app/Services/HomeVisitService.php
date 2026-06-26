@@ -3,38 +3,37 @@ namespace App\Services;
 
 use App\Models\HomeVisits;
 use App\Models\Patient;
+use Exception;
 
 class HomeVisitService
 {
-    public function createPatientRequest(Patient $patient, array $data): array
-    {
-        try {
-            // دمج رقم المريض مع البيانات
-            $data['patient_id'] = $patient->id;
+public function bookHomeVisit(Patient $patient, array $data): HomeVisits
+{
+    // 1. التحقق من أن هذا الوقت لم يُحجز مسبقاً بناءً على التاريخ والوقت
+    $slotTaken = HomeVisits::where('doctor_id', $data['doctor_id'])
+        ->where('visit_date', $data['visit_date'])
+        ->whereIn('status', ['pending', 'assigned', 'on_the_way'])
+        ->where(function ($query) use ($data) {
+            // شرط التحقق من التداخل الزمني
+            $query->where('start_time', '<', $data['end_time'])
+                  ->where('end_time', '>', $data['start_time']);
+        })
+        ->exists();
 
-            // سيأخذ حالة 'pending' تلقائياً بناءً على الـ Migration
-            // الـ doctor_id والـ receptionist_id سيكونان null
-            $homeVisit = HomeVisits::create($data);
-
-            return [
-                'status_code' => 201,
-                'response' => [
-                    'success' => true,
-                    'message' => 'تم إرسال طلب الرعاية المنزلية بنجاح، بانتظار موافقة الاستقبال.',
-                    'data'    => $homeVisit
-                ]
-            ];
-
-        } catch (\Exception $e) {
-            \Log::error('Error creating home visit request: ' . $e->getMessage());
-
-            return [
-                'status_code' => 500,
-                'response' => [
-                    'success' => false,
-                    'message' => 'حدث خطأ أثناء إرسال الطلب، يرجى المحاولة لاحقاً.'
-                ]
-            ];
-        }
+    if ($slotTaken) {
+        throw new Exception('عذراً، هذا الموعد تم حجزه للتو من قبل مريض آخر، يرجى اختيار وقت مختلف.');
     }
+
+    try {
+        // 2. دمج معرف المريض
+        $data['patient_id'] = $patient->id;
+
+        // 3. إنشاء الحجز
+        return HomeVisits::create($data);
+
+    } catch (Exception $e) {
+        \Log::error('Error booking home visit: ' . $e->getMessage());
+        throw new Exception('حدث خطأ داخلي أثناء تسجيل الحجز، يرجى المحاولة لاحقاً.');
+    }
+}
 }

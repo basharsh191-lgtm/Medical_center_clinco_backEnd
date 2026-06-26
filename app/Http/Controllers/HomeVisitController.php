@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\HomeVisitPatientRequest;
 use App\Models\patient;
 use App\Services\HomeVisitService;
 use Illuminate\Http\Request;
@@ -16,9 +17,10 @@ protected $homeVisitService;
         $this->homeVisitService = $homeVisitService;
     }
 
-    public function storeRequest(Request $request)
+public function storeRequest(HomeVisitPatientRequest $request)
     {
-        $patient = patient::where('user_id',Auth::id())->first();
+        // جلب ملف المريض المرتبط بالمستخدم الحالي
+        $patient = Patient::where('user_id', Auth::id())->first();
 
         if (!$patient) {
             return response()->json([
@@ -27,17 +29,21 @@ protected $homeVisitService;
             ], 404);
         }
 
-        // التحقق من صحة البيانات القادمة من الفلاتر
-        $validatedData = $request->validate([
-            'specialization_id' => 'required|exists:specializations,id',
-            'visit_date'        => 'required|date_format:Y-m-d H:i:s|after:now',
-            'location_lat'      => 'required|numeric|between:-90,90',
-            'location_lng'      => 'required|numeric|between:-180,180',
-        ]);
+        try {
+            // استدعاء السيرفيس لإنشاء الحجز
+            $homeVisit = $this->homeVisitService->bookHomeVisit($patient, $request->validated());
 
-        // استدعاء السيرفيس
-        $result = $this->homeVisitService->createPatientRequest($patient, $validatedData);
+            return response()->json([
+                'success' => true,
+                'message' => 'تم حجز موعد الرعاية المنزلية بنجاح، بانتظار موافقة الاستقبال.',
+                'data'    => $homeVisit
+            ], 201);
 
-        return response()->json($result['response'], $result['status_code']);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422); // 422 في حال فشل التحقق من توفر السلوت برمجياً
+        }
     }
     }
