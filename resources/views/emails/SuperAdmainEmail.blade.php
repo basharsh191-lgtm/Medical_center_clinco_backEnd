@@ -23,7 +23,10 @@
                     <!-- الهيدر والشعار -->
                     <tr>
                         <td align="center" style="padding: 35px 30px 10px 30px;">
-                            <img src="{{ $message->embed(public_path('storage/logo/logo.jpg')) }}" alt="Clinco" width="80" style="display: block; border-radius: 20px; outline: none; text-decoration: none;" />
+                            @php($logoPath = public_path('storage/logo/logo.jpg'))
+                            @if(file_exists($logoPath))
+                            <img src="{{ $message->embed($logoPath) }}" alt="Clinco" width="80" style="display: block; border-radius: 20px; outline: none; text-decoration: none;" />
+                            @endif
                             <h1 style="color: #146b8a; font-size: 22px; font-weight: 800; margin: 15px 0 5px 0; font-family: 'Segoe UI', Tahoma, sans-serif;">مرحباً بك في فريق Clinco 🌿</h1>
                             <p style="color: #2f86a6; font-size: 13px; font-weight: 600; margin: 0; background-color: #e6f4f9; display: inline-block; padding: 5px 15px; border-radius: 20px;">إشعار نظام إدارة الموظفين الداخلي</p>
                         </td>

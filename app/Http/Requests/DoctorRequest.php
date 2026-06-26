@@ -34,7 +34,7 @@ class DoctorRequest extends FormRequest
             'experience_years'  => 'nullable|integer',
             'number_operations'  => 'nullable|integer',
             'bio'               => 'nullable|string',
-            'image'             => 'required_if:role,doctor|image|mimes:jpeg,png,jpg|max:2048',
+            'image'             => 'required|image|mimes:jpeg,png,jpg|max:2048',
         ];
     }
 }

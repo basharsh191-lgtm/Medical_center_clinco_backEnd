@@ -8,7 +8,6 @@ use App\Models\User;
 use App\Services\OTPService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use function Pest\Laravel\delete;
 
 class AuthController extends Controller
 {
@@ -31,7 +30,7 @@ public function register(RequestRegister $request)
         ], 200);
     }
 
-    return response()->json(['message' => 'فشل إرسال الإيميل','data'=>delete($user)], 500);
+    return response()->json(['message' => 'فشل إرسال الإيميل','data'=>$user->delete()], 500);
 }
 public function verifyOtp(Request $request)
 {
