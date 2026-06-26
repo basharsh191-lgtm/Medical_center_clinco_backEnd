@@ -32,7 +32,7 @@ Route::middleware(['auth:sanctum','role:patient'])->group(function () {
     Route::delete('/appointmentCancel/{appointment}',[PatientController::class,'appointmentCancel']);
     Route::post('/ratings/{doctorId}',[RatingController::class,'storeRating']);
     Route::get('/patient/getAppointments', [PatientController::class, 'patientAppointments']);
-    Route::get('/prescription/{appointment}', [PrescriptionController::class, 'getAppointmentPrescription']);
+    Route::get('/appointments/{appointment}', [PatientController::class, 'showAppointment']);
     Route::get('/patient/my-labOrders', [LabOrderController::class, 'getMyLabOrders']);
     Route::post('/attachments', [AttachmentController::class, 'storeAttachments']);
     Route::get('/patient/my-medical-history', [MedicalRecordController::class, 'getMyMedicalHistory']);

@@ -170,6 +170,36 @@ public function getNextAppointment()
 
     return response()->json($result['response'], $result['status_code']);
 }
+public function showAppointment(Appointment $appointment)
+    {
+        $user = Auth::user();
+
+        if ($user->doctorProfile) {
+            // إذا كان المستخدم طبيب
+            if ($appointment->doctor_id !== $user->doctorProfile->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'غير مصرح لك بعرض هذا الموعد.'
+                ], 403);
+            }
+        } else {
+            // إذا كان المستخدم مريض
+            if ($appointment->patient_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'غير مصرح لك بعرض تفاصيل هذا الموعد.'
+                ], 403);
+            }
+        }
+
+        $appointment->load(['prescription.items','doctor.user','clinic']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم جلب تفاصيل الموعد بنجاح.',
+            'data'    => $appointment
+        ], 200);
+    }
 }
 
 

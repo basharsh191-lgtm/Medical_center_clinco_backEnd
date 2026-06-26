@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreLabOrderRequest;
+use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\LabOrder;
 use App\Models\patient;
 use App\Services\MedicalRecordService;
 use Auth;
+use Illuminate\Support\Facades\Request;
 
 class LabOrderController extends Controller
 {
