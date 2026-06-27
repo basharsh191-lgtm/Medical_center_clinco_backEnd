@@ -104,6 +104,6 @@ Route::middleware(['auth:sanctum','role:doctor'])->group(function () {
 
     //visit home
     //Route::get('/doctor-assigned-visits', [DoctorHomeVisitController::class, 'getDoctorAssignedVisits']);
-
+    //
 
 });
