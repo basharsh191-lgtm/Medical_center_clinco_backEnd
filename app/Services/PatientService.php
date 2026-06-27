@@ -63,7 +63,8 @@ public function getAllAppointments()
                 $query->select('id', 'user_id', 'image')
                     ->with('user:id,name');
             },
-            'clinic:id,clinic_name'
+            'clinic:id,clinic_name',
+            'prescription.items'
         ])
         ->where('patient_id', $patient->id)
         ->orderBy('appointment_date', 'desc')
