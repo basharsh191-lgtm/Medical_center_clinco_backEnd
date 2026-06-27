@@ -192,7 +192,7 @@ public function showAppointment(Appointment $appointment)
             }
         }
 
-        $appointment->load(['prescription.items','doctor.user','clinic']);
+        $appointment->load(['prescription.items','doctor.user','clinic','labOrders.tests']);
 
         return response()->json([
             'success' => true,
