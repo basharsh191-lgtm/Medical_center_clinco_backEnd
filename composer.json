@@ -11,7 +11,7 @@
     "require": {
         "php": "^8.2",
         "google-gemini-php/client": "^2.7",
-        "kreait/laravel-firebase": "*",
+        "kreait/laravel-firebase": "^6.2",
         "laravel/framework": "^12.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
