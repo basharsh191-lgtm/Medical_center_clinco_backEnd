@@ -5,6 +5,7 @@ use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\ReceptionistScheduleController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClincController;
+use App\Http\Controllers\DeviceTokenController;
 use App\Http\Controllers\DoctorForPatientController;
 use App\Http\Controllers\DoctorHomeVisitController;
 use App\Http\Controllers\HomeVisitController;
@@ -124,5 +125,11 @@ Route::middleware(['auth:sanctum','role:doctor'])->group(function () {
     //visit home
     //Route::get('/doctor-assigned-visits', [DoctorHomeVisitController::class, 'getDoctorAssignedVisits']);
     //
+
+});
+Route::middleware('auth:sanctum')->group(function () {
+
+    Route::post('/device-token', [DeviceTokenController::class, 'storeDeviceToken']);
+    Route::delete('/device-token/delete', [DeviceTokenController::class, 'destroyDeviceToken']);
 
 });
