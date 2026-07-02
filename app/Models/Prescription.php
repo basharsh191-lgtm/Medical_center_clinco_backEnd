@@ -15,4 +15,8 @@ class Prescription extends Model
     {
         return $this->hasMany(PrescriptionItem::class);
     }
+    public function medicalRecord()
+    {
+        return $this->belongsTo(MedicalRecord::class);
+    }
 }

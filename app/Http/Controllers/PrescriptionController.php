@@ -20,7 +20,6 @@ class PrescriptionController extends Controller
     {
         $user = Auth::user()->load('doctorProfile');
 
-        // 1. التحقق من صلاحية الطبيب (توحيد شكل الاستجابة)
         if (!$user->doctorProfile) {
             return response()->json([
                 'success' => false,
@@ -36,7 +35,6 @@ class PrescriptionController extends Controller
             ], 422);
         }
 
-        // 3. التحقق من صحة البيانات (Laravel سيعيد 422 تلقائياً مع الأخطاء إذا فشل التحقق)
         $validatedData = $request->validate([
             'instructions'          => 'nullable|string',
             'items'                 => 'required|array|min:1',
@@ -45,10 +43,33 @@ class PrescriptionController extends Controller
             'items.*.frequency'     => 'required|string|max:100',
             'items.*.duration'      => 'required|string|max:100',
         ]);
-
-        // 4. استدعاء الخدمة وتمرير البيانات النظيفة (Validated)
         $result = $this->medicalRecordService->storePrescription($appointment, $validatedData);
-
         return response()->json($result['response'], $result['status_code']);
+    }
+    // عرض روشتة محددة
+    public function showPrescription($id)
+    {
+        $prescription = $this->medicalRecordService->getPrescription($id);
+        return response()->json(['success' => true, 'data' => $prescription]);
+    }
+    public function updatePrescription(Request $request, $id)
+    {
+        $validatedData = $request->validate([
+            'instructions' => 'nullable|string',
+            'items'        => 'required|array|min:1',
+        ]);
+
+        $updatedPrescription = $this->medicalRecordService->updatePrescription($id, $validatedData);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم تحديث الروشتة بنجاح.',
+            'data' => $updatedPrescription
+        ]);
+    }
+    public function destroyPrescription($id)
+    {
+        $this->medicalRecordService->deletePrescription($id);
+        return response()->json(['success' => true, 'message' => 'تم حذف الروشتة وإعادة فتح الموعد.']);
     }
 }

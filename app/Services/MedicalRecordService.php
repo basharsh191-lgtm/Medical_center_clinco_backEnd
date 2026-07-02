@@ -74,59 +74,146 @@ class MedicalRecordService
             ];
         }
     }
-public function createOrder(array $data)
-{
-    $user = Auth::user();
-
-    // 1. جلب بيانات الطبيب الحالي
-    $doctor = Doctor::where('user_id', $user->id)->first();
-    if (!$doctor) {
-        throw ValidationException::withMessages([
-            'doctor' => 'الحساب الحالي غير مسجل كطبيب.',
-        ]);
+    public function getPrescription($id)
+    {
+        return Prescription::with('items')->findOrFail($id);
     }
+    public function updatePrescription($id, array $data)
+    {
+        return DB::transaction(function () use ($id, $data) {
+            $prescription = Prescription::findOrFail($id);
 
-    // 2. التحقق الأمني: هل الموعد يخص هذا الطبيب فعلاً؟
-    // افترضت هنا أن جدول المواعيد يحتوي على حقل doctor_id
-    $appointmentExists = Appointment::where('id', $data['appointment_id'])
-                                    ->where('doctor_id', $doctor->id)
-                                    ->exists();
+            // تحديث التعليمات
+            $prescription->update(['instructions' => $data['instructions'] ?? $prescription->instructions]);
 
-    if (!$appointmentExists) {
-        throw ValidationException::withMessages([
-            'appointment_id' => 'لا يمكنك طلب تحليل لمريض غير مسجل في مواعيدك الشخصية.',
-        ]);
+            // تحديث الأدوية: الطريقة الأسهل هي حذف القديم وإضافة الجديد
+            $prescription->items()->delete();
+            $prescription->items()->createMany($data['items']);
+
+            return $prescription->load('items');
+        });
     }
+    public function deletePrescription($id)
+    {
+        return DB::transaction(function () use ($id) {
+            $prescription = Prescription::findOrFail($id);
+            return $prescription->delete();
+        });
+    }
+    public function createOrder(array $data)
+    {
+        $user = Auth::user();
 
-    // استخدام Transaction لضمان حفظ الطلب والتحاليل معاً
-    return DB::transaction(function () use ($data) {
-
-        // 3. إنشاء الطلب الرئيسي
-        $labOrder = LabOrder::create([
-            'appointment_id' => $data['appointment_id'],
-            'doctor_notes'   => $data['doctor_notes'] ?? null,
-            'overall_status' => 'pending',
-        ]);
-
-        // 4. تحضير مصفوفة التحاليل للـ Insert
-        $testsData = [];
-        $now = now(); // تعريف الوقت بره اللوب أفضل للأداء
-
-        foreach ($data['tests'] as $testName) {
-            $testsData[] = [
-                'lab_order_id' => $labOrder->id,
-                'test_name'    => $testName,
-                'status'       => 'pending',
-                'created_at'   => $now,
-                'updated_at'   => $now,
-            ];
+        // 1. جلب بيانات الطبيب الحالي
+        $doctor = Doctor::where('user_id', $user->id)->first();
+        if (!$doctor) {
+            throw ValidationException::withMessages([
+                'doctor' => 'الحساب الحالي غير مسجل كطبيب.',
+            ]);
         }
 
-        // 5. حفظ كل التحاليل دفعة واحدة
-        LabOrderTest::insert($testsData);
+        // 2. التحقق الأمني: هل الموعد يخص هذا الطبيب فعلاً؟
+        // افترضت هنا أن جدول المواعيد يحتوي على حقل doctor_id
+        $appointmentExists = Appointment::where('id', $data['appointment_id'])
+                                        ->where('doctor_id', $doctor->id)
+                                        ->exists();
 
-        // إرجاع الطلب مع تفاصيله
-        return $labOrder->load('tests');
-    });
-}
+        if (!$appointmentExists) {
+            throw ValidationException::withMessages([
+                'appointment_id' => 'لا يمكنك طلب تحليل لمريض غير مسجل في مواعيدك الشخصية.',
+            ]);
+        }
+
+        // استخدام Transaction لضمان حفظ الطلب والتحاليل معاً
+        return DB::transaction(function () use ($data) {
+
+            // 3. إنشاء الطلب الرئيسي
+            $labOrder = LabOrder::create([
+                'appointment_id' => $data['appointment_id'],
+                'doctor_notes'   => $data['doctor_notes'] ?? null,
+                'overall_status' => 'pending',
+            ]);
+
+            // 4. تحضير مصفوفة التحاليل للـ Insert
+            $testsData = [];
+            $now = now(); // تعريف الوقت بره اللوب أفضل للأداء
+
+            foreach ($data['tests'] as $testName) {
+                $testsData[] = [
+                    'lab_order_id' => $labOrder->id,
+                    'test_name'    => $testName,
+                    'created_at'   => $now,
+                    'updated_at'   => $now,
+                ];
+            }
+
+            // 5. حفظ كل التحاليل دفعة واحدة
+            LabOrderTest::insert($testsData);
+
+            // إرجاع الطلب مع تفاصيله
+            return $labOrder->load('tests');
+        });
+    }
+    public function updateOrder($id, array $data)
+    {
+        $order = LabOrder::find($id);
+
+        // 1. منع التعديل إذا كان الطلب غير موجود أو مكتمل
+        if (!$order || $order->overall_status === 'completed') { // تأكد من اسم الحقل: overall_status أو status
+            return null;
+        }
+
+        // 2. تحديث الحقول المسموح بها فقط (لتجنب الخطأ)
+        // نستخدم only لنستثني حقل 'tests' من التحديث المباشر للجدول
+        $order->update(collect($data)->except(['tests'])->toArray());
+
+        // 3. إذا كان التعديل يشمل قائمة التحاليل
+        if (isset($data['tests']) && is_array($data['tests'])) {
+
+            // حذف التحاليل القديمة
+            $order->tests()->delete();
+
+            // إضافة التحاليل الجديدة
+            $newTests = [];
+            $now = now();
+            foreach ($data['tests'] as $testName) {
+                $newTests[] = [
+                    'lab_order_id' => $order->id,
+                    'test_name'    => $testName,
+                    'created_at'   => $now,
+                    'updated_at'   => $now,
+                ];
+            }
+
+            // حفظ التحاليل الجديدة دفعة واحدة (Bulk Insert)
+            LabOrderTest::insert($newTests);
+        }
+
+        return $order->load('tests');
+    }
+    public function getPatientHistory(int $patientId, int $specializationId)
+    {
+        return MedicalRecord::where('patient_id', $patientId)
+            ->whereHas('doctor', function ($query) use ($specializationId) {
+                // فلترة السجلات لتعود فقط للأطباء الذين ينتمون لنفس الاختصاص (أو العيادة)
+                $query->where('specialization_id', $specializationId);
+                // ملاحظة: إذا كان الربط في قاعدة بياناتك يعتمد على العيادة،
+                // يمكنك استبدال specialization_id بـ clinic_id
+            })
+            ->with(['doctor.user', 'appointment']) // جلب البيانات المرتبطة
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
+    public function getPatientAllergies(int $patientId)
+    {
+        $patient = Patient::select('id', 'blood_type', 'allergies', 'chronic_diseases','hereditary')
+            ->findOrFail($patientId);
+        return $patient;
+    }
+    public function updatePatientAllergies(int $patientId, array $data)
+    {
+        $patient = Patient::findOrFail($patientId);
+        $patient->update($data);
+        return $patient->only(['id', 'blood_type', 'allergies', 'chronic_diseases', 'hereditary']);
+    }
 }

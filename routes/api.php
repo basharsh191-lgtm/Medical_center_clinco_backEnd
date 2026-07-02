@@ -5,6 +5,7 @@ use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\ReceptionistScheduleController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClincController;
+use App\Http\Controllers\DoctorForPatientController;
 use App\Http\Controllers\DoctorHomeVisitController;
 use App\Http\Controllers\HomeVisitController;
 use App\Http\Controllers\LabOrderController;
@@ -17,13 +18,13 @@ use App\Http\Controllers\StaffController;
 use Illuminate\Support\Facades\Route;
 
 //Auth
-Route::post('/register',[AuthController::class,'register']);
-Route::post('/login',[AuthController::class,'login'])->middleware('throttle:5,1'); // تقييد محاولات تسجيل الدخول لمنع الهجمات
-Route::post('logout',[AuthController::class,'logout'])->middleware('auth:sanctum');
-Route::post('/password/forgot', [AuthController::class, 'forgotPassword']);
-Route::post('/password/reset', [AuthController::class, 'resetPassword']);
-Route::post('/verify_otp',[AuthController::class,'verifyOtp']);
-Route::post('/resendOtp',[AuthController::class,'resendOtp']);
+    Route::post('/register',[AuthController::class,'register']);
+    Route::post('/login',[AuthController::class,'login'])->middleware('throttle:5,1'); // تقييد محاولات تسجيل الدخول لمنع الهجمات
+    Route::post('logout',[AuthController::class,'logout'])->middleware('auth:sanctum');
+    Route::post('/password/forgot', [AuthController::class, 'forgotPassword']);
+    Route::post('/password/reset', [AuthController::class, 'resetPassword']);
+    Route::post('/verify_otp',[AuthController::class,'verifyOtp']);
+    Route::post('/resendOtp',[AuthController::class,'resendOtp']);
 
 //patient
 Route::middleware(['auth:sanctum','role:patient'])->group(function () {
@@ -53,20 +54,20 @@ Route::middleware(['auth:sanctum','role:patient'])->group(function () {
 
 });
 
-//عرض تقييمات الأطباء
-Route::get('/showAllRatingsDoctors', [RatingController::class, 'showAllRatingsDoctors']);
-Route::get('/showDoctorRatings/{id}', [RatingController::class, 'showDoctorRatings']);
+    //عرض تقييمات الأطباء
+    Route::get('/showAllRatingsDoctors', [RatingController::class, 'showAllRatingsDoctors']);
+    Route::get('/showDoctorRatings/{id}', [RatingController::class, 'showDoctorRatings']);
 
-//show home page
-//استدعاء العيادة مع دكاترتها
-Route::get('/showClinic/{id}',[ClincController::class,'showClinic']);
-Route::get('/showClinicAll',[ClincController::class,'showClinicAll']);
+    //show home page
+    //استدعاء العيادة مع دكاترتها
+    Route::get('/showClinic/{id}',[ClincController::class,'showClinic']);
+    Route::get('/showClinicAll',[ClincController::class,'showClinicAll']);
 
-//عرض بروفايل دكتور معين
-Route::get('/showDoctor/{id}',[ClincController::class,'showDoctor']);
-//عرض اوقات المتاحة للطبيب
-Route::get('doctors/{doctor}/available-slots', [AppointmentController::class, 'getAvailableSlots']);
-Route::get('/clinics-with-doctors', [ClincController::class, 'getClinicsWithDoctors']);
+    //عرض بروفايل دكتور معين
+    Route::get('/showDoctor/{id}',[ClincController::class,'showDoctor']);
+    //عرض اوقات المتاحة للطبيب
+    Route::get('doctors/{doctor}/available-slots', [AppointmentController::class, 'getAvailableSlots']);
+    Route::get('/clinics-with-doctors', [ClincController::class, 'getClinicsWithDoctors']);
 
 //admain
 Route::middleware(['auth:sanctum','role:super_admin'])->group(function () {
@@ -79,17 +80,17 @@ Route::middleware(['auth:sanctum','role:super_admin'])->group(function () {
 
 //reception
 Route::middleware(['auth:sanctum','role:reception'])->group(function () {
-//اضافة جدول لدكتور معين داخل عيادة مخصصة
-Route::post('store/schedule/reception',[ReceptionistScheduleController::class,'storeSchedule']);
-//جلب كل الاطباء في العيادة التي يشتغل بها الريسبشن
-Route::get('get/doctors/reception',[ReceptionistScheduleController::class,'getMyClinicDoctors']);
-//تحويل حالة الموعد من  scheduled الىarrived
-Route::post('/receptionist/check-in', [ReceptionistScheduleController::class, 'checkInByPatientQR']);
+    //اضافة جدول لدكتور معين داخل عيادة مخصصة
+    Route::post('store/schedule/reception',[ReceptionistScheduleController::class,'storeSchedule']);
+    //جلب كل الاطباء في العيادة التي يشتغل بها الريسبشن
+    Route::get('get/doctors/reception',[ReceptionistScheduleController::class,'getMyClinicDoctors']);
+    //تحويل حالة الموعد من  scheduled الىarrived
+    Route::post('/receptionist/check-in', [ReceptionistScheduleController::class, 'checkInByPatientQR']);
 
-//home visit
-Route::get('/show-home-visits', [ReceptionHomeVisitController::class, 'getClinicHomeVisits']);
-Route::post('/approve-home-visit/{id}', [ReceptionHomeVisitController::class, 'approveAndAssignDoctor']);
-Route::post('/reject-home-visit/{id}', [ReceptionHomeVisitController::class, 'rejectVisit']);
+    //home visit
+    Route::get('/show-home-visits', [ReceptionHomeVisitController::class, 'getClinicHomeVisits']);
+    Route::post('/approve-home-visit/{id}', [ReceptionHomeVisitController::class, 'approveAndAssignDoctor']);
+    Route::post('/reject-home-visit/{id}', [ReceptionHomeVisitController::class, 'rejectVisit']);
 
 
 
@@ -97,10 +98,28 @@ Route::post('/reject-home-visit/{id}', [ReceptionHomeVisitController::class, 're
 //doctor
 Route::middleware(['auth:sanctum','role:doctor'])->group(function () {
     //تخزين السجل الطبي للمريض وإغلاق الموعد
-    Route::post('/storeMedicalRecord', [MedicalRecordController::class, 'storeMedicalRecord']);
+    Route::post('/store-medical-record/{appointment}', [MedicalRecordController::class, 'storeMedicalRecord']);
+    Route::put('/update-medical-record/{appointment}', [MedicalRecordController::class, 'updateMedicalRecord']);
+    Route::delete('/delete-medical-record/{medicalRecord}', [MedicalRecordController::class, 'destroyMedicalRecord']);
+    Route::get('/patients/{patient}/medical-history', [MedicalRecordController::class, 'getPatientHistory']);
+    Route::get('/patients/{patient}/allergies', [MedicalRecordController::class, 'getPatientAllergies']);
+    Route::put('/patients/{patient}/allergies', [MedicalRecordController::class, 'updatePatientAllergies']);
+
+    Route::get('/doctor/scan-qr/{qr_string}', [DoctorForPatientController::class, 'getPatientByQR']);
+    Route::get('/patients/{id}/attachments', [DoctorForPatientController::class, 'getPatientAttachments']);
+    Route::get('/patients/{patient_id}/analyses', [DoctorForPatientController::class, 'getPatientAnalyses']);
+    Route::get('/doctor/today-appointments', [DoctorForPatientController::class, 'getTodayAppointments']);
+
     Route::post('appointments/{appointment}/prescription', [PrescriptionController::class, 'storePrescription']);
+    Route::get('prescriptions/{id}/show', [PrescriptionController::class, 'showPrescription']);
+    Route::put('prescriptions/{id}/update', [PrescriptionController::class, 'updatePrescription']);
+    Route::delete('prescriptions/{id}/delete', [PrescriptionController::class, 'destroyPrescription']);
+
     Route::post('appointments/{appointment}/lab-orders', [LabOrderController::class, 'storeLabOrderDoctor']);
+    Route::get('show/{id}/lab-orders', [LabOrderController::class, 'editLabOrder']);
+    Route::put('update/lab-orders/{id}', [LabOrderController::class, 'updateLabOrderDoctor']);
     Route::delete('appointments/lab-orders/{id}', [LabOrderController::class, 'cancelLabOrder']);
+
 
     //visit home
     //Route::get('/doctor-assigned-visits', [DoctorHomeVisitController::class, 'getDoctorAssignedVisits']);
