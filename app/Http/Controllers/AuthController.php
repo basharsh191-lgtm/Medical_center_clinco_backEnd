@@ -73,11 +73,9 @@ public function login(LoginRequest $request)
 public function logout(Request $request)
 {
     $user = $request->user();
-    $user->update(['is_verified' => false]);
     $user->currentAccessToken()->delete();
     return response()->json([
     'message' => 'The log out successfully',
-    'is_verified' => false
     ], 200);
 }
 public function forgotPassword(Request $request)
