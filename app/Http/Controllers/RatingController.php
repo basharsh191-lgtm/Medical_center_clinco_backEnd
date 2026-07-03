@@ -20,17 +20,35 @@ protected $ratingService;
         $this->ratingService = $ratingService;
     }
 
-    public function storeRating(StoreRatingRequest $request, $doctorId)
+public function storeRating(StoreRatingRequest $request, $doctorId)
     {
+        try {
             $rating = $this->ratingService->store(
                 $request->validated(),
                 $doctorId,
                 Auth::id()
             );
+
+            // استجابة النجاح
             return response()->json([
+                'success' => true,
                 'message' => 'تم تسجيل تقييمك بنجاح.',
                 'data'    => $rating
             ], 201);
+
+        } catch (\Exception $e) {
+            // التحقق من كود الخطأ ليكون رقم HTTP صالح (أو استخدام 400 كافتراضي)
+            $statusCode = $e->getCode();
+            if ($statusCode < 100 || $statusCode > 599) {
+                $statusCode = 400;
+            }
+
+            // استجابة الفشل (بدون trace)
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], $statusCode);
+        }
     }
     public function showAllRatingsDoctors()
     {
