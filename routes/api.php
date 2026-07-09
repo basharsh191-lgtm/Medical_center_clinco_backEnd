@@ -133,3 +133,4 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/device-token/delete', [DeviceTokenController::class, 'destroyDeviceToken']);
 
 });
+Route::get('/test-fcm', [StaffController::class, 'sendTestNotification']);
