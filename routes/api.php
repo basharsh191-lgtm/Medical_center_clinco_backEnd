@@ -129,7 +129,7 @@ Route::middleware(['auth:sanctum','role:doctor'])->group(function () {
 });
 Route::middleware('auth:sanctum')->group(function () {
 
-    Route::post('/device-token', [DeviceTokenController::class, 'storeDeviceToken']);
+    Route::post('/device-token', [DeviceTokenController::class, 'saveDeviceToken']);
     Route::delete('/device-token/delete', [DeviceTokenController::class, 'destroyDeviceToken']);
 
 });
