@@ -33,7 +33,7 @@ public function storeReception(ReceptionRequest $request)
         'data' => $reception
     ], 201);
 }
-public function storeDoctor(DoctorRequest $request)
+public function storeDoctor(DoctorRequest $request,FcmService $fcmService)
 {
     $validatedData = $request->validated();
 
@@ -50,31 +50,26 @@ public function storeDoctor(DoctorRequest $request)
         'doctor'
     );
 
-    // ==========================================
-    // كود إرسال الإشعار الجماعي
-    // ==========================================
+ // 2. تجهيز بيانات الإشعار
+    $title = 'انضم إلينا طبيب جديد! 🌟';
+    $body = "نرحب بالدكتور {$doctor->name} (اختصاص {$doctor->specialty}) في المنصة.";
 
-    // 1. جلب جميع التوكنات من قاعدة البيانات (نستبعد القيم الفارغة)
-    // استبدل 'device_token' باسم العمود الفعلي لديك في الداتا بيز
-    $tokens = DeviceTokens::whereNotNull('token')
-                  ->pluck('token')
-                  ->toArray();
+    // ميزة الـ Data Payload عشان مبرمج الفلاتر يفتح صفحة الدكتور فوراً عند الضغط على الإشعار
+    $data = [
+        'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+        'action' => 'OPEN_DOCTOR_PROFILE',
+        'doctor_id' => (string) $doctor->id,
+    ];
 
-    // 2. التحقق من وجود توكنات قبل محاولة الإرسال
-    if (!empty($tokens)) {
-        // يمكنك استخدام بيانات الطبيب المضاف في محتوى الإشعار
-        $doctorName = $validatedData['name'] ?? 'طبيب جديد';
-        $title = 'انضمام كادر طبي جديد! 👨‍⚕️';
-        $body = "تم انضمام {$doctorName} إلى عيادتنا. احجز موعدك الآن!";
+    // 3. إرسال الإشعار لكل اليوزرات اللي عندهم أجهزة مسجلة (على دفعات لحماية الذاكرة)
+    // نختار فقط المستخدمين الذين يملكون توكنات في جدول الـ device_tokens
+    User::whereHas('deviceTokens')->select('id')->chunk(100, function ($users) use ($fcmService, $title, $body, $data) {
+        foreach ($users as $user) {
+            // استدعاء الدالة المجهزة عندك بالـ Service
+            $fcmService->sendToUser($user->id, $title, $body, $data);
+        }
+    });
 
-        $extraData = [
-            'type' => 'new_doctor',
-            'doctor_id' => (string) $doctor->id // يفضل تحويل الأرقام لنصوص في بيانات الإشعار
-        ];
-
-        // 3. استدعاء دالة الإرسال من السيرفيس
-        $this->fcmService->sendMulticastNotification($tokens, $title, $body, $extraData);
-    }
     return response()->json([
         'message' => 'Doctor created successfully',
         'data' => $doctor,

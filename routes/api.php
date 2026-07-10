@@ -10,6 +10,7 @@ use App\Http\Controllers\DoctorHomeVisitController;
 use App\Http\Controllers\HomeVisitController;
 use App\Http\Controllers\LabOrderController;
 use App\Http\Controllers\MedicalRecordController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\PrescriptionController;
 use App\Http\Controllers\RatingController;
@@ -128,4 +129,5 @@ Route::middleware(['auth:sanctum','role:doctor'])->group(function () {
 });
 
 
+Route::middleware('auth:sanctum')->post('/device-token', [NotificationController::class, 'saveToken']);
 
