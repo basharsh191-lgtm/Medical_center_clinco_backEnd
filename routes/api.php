@@ -121,7 +121,9 @@ Route::middleware(['auth:sanctum','role:doctor'])->group(function () {
     Route::put('update/lab-orders/{id}', [LabOrderController::class, 'updateLabOrderDoctor']);
     Route::delete('appointments/lab-orders/{id}', [LabOrderController::class, 'cancelLabOrder']);
 
-
+    Route::get('/doctor/current-queue', [DoctorForPatientController::class, 'getCurrentQueue']);
+    Route::get('/patients/{qr_token}/profile', [DoctorForPatientController::class, 'getPatientFullProfile']);
+    Route::put('/appointments/{appointment}/vital-signs', [MedicalRecordController::class, 'storeVitalSigns']);
     //visit home
     //Route::get('/doctor-assigned-visits', [DoctorHomeVisitController::class, 'getDoctorAssignedVisits']);
     //

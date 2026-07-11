@@ -244,4 +244,71 @@ class MedicalRecordController extends Controller
             'data'    => $updatedData
         ], 200);
     }
+    public function storeVitalSigns(Request $request, Appointment $appointment)
+    {
+        $user = Auth::user()->load('doctorProfile');
+
+        // التحقق من أن المستخدم طبيب
+        if (!$user->doctorProfile) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'هذا الحساب ليس مسجلاً كطبيب في النظام.'
+            ], 403);
+        }
+
+        $doctorId = $user->doctorProfile->id;
+
+        // التحقق من ملكية الموعد للطبيب الحالي لضمان الأمن
+        if ($appointment->doctor_id !== $doctorId) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'عذراً، هذا الموعد غير مسجل باسمك ولا يمكنك إضافة مؤشرات حيوية له.'
+            ], 403);
+        }
+
+        // التحقق من البيانات القادمة من الريكويست
+        $validated = $request->validate([
+            'weight' => 'nullable|integer|min:1',
+            'taller' => 'nullable|integer|min:1', // الطول
+            // إذا كنت قد أضفت حقول الضغط والحرارة وال سكر إلى جدول المريض أو جدول منفصل، يمكنك التحقق منها هنا:
+            'blood_pressure' => 'nullable|string',
+            'temperature'    => 'nullable|numeric',
+            'blood_sugar'    => 'nullable|string',
+        ]);
+
+        // جلب المريض المرتبط بالموعد لتحديث بياناته الحيوية الثابتة
+        $patient = $appointment->patient;
+
+        if (!$patient) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'المريض المرتبط بهذا الموعد غير موجود.'
+            ], 404);
+        }
+
+        // تحديث الحقول الحيوية الأساسية للمريض في جدول patients
+        $patient->update([
+            'weight' => $validated['weight'] ?? $patient->weight,
+            'taller' => $validated['taller'] ?? $patient->taller,
+        ]);
+
+        // هنا: إذا كان لديك جدول خاص بالـ Vital Signs التاريخية لكل موعد، يمكنك إدخال السجل عبر السيرفيس:
+        // $vitalSignRecord = $this->medicalRecordService->storeAppointmentVitals($appointment->id, $validated);
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'تم تسجيل وتحديث المؤشرات الحيوية للمريض بنجاح.',
+            'data'    => [
+                'appointment_id' => $appointment->id,
+                'patient_id'     => $patient->id,
+                'weight'         => $patient->weight,
+                'taller'         => $patient->taller,
+                // يمكنك إرجاع الحقول الإضافية إذا تم حفظها في مكان آخر
+                'blood_pressure' => $validated['blood_pressure'] ?? null,
+                'temperature'    => $validated['temperature'] ?? null,
+                'blood_sugar'    => $validated['blood_sugar'] ?? null,
+            ]
+        ], 201);
+    }
+
 }
