@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RequestRegister;
+use App\Models\DeviceTokens;
 use App\Models\User;
 use App\Services\OTPService;
 use Illuminate\Http\Request;
@@ -73,9 +74,16 @@ public function login(LoginRequest $request)
 public function logout(Request $request)
 {
     $user = $request->user();
+
+    // حذف التوكن الحالي
     $user->currentAccessToken()->delete();
+
+    // حذف جميع Device Tokens الخاصة بالمستخدم
+    DeviceTokens::where('user_id', $user->id)->delete();
+
     return response()->json([
-    'message' => 'The log out successfully',
+        'message' => 'Logged out successfully',
+        'status' => 'success'
     ], 200);
 }
 public function forgotPassword(Request $request)

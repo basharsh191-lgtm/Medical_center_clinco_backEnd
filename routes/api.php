@@ -127,4 +127,14 @@ Route::middleware(['auth:sanctum','role:doctor'])->group(function () {
     //
 
 });
-Route::middleware('auth:sanctum')->post('/device-token', [NotificationController::class, 'saveToken']);
+
+
+
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('/device-token', [NotificationController::class, 'saveToken']);
+    Route::delete('/device-token/delete', [NotificationController::class, 'deleteToken']);
+    Route::put('/notifications/mark-as-read', [NotificationController::class, 'markAllAsRead']);
+    Route::put('/notifications/mark-as-read/{id}', [NotificationController::class, 'markAsRead']);
+    Route::get('/notifications', [NotificationController::class, 'getNotifications']);
+    Route::get('/notifications/{id}', [NotificationController::class, 'showNotification']);
+});
