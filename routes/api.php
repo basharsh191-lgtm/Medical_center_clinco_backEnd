@@ -106,10 +106,10 @@ Route::middleware(['auth:sanctum','role:doctor'])->group(function () {
     Route::get('/patients/{patient}/allergies', [MedicalRecordController::class, 'getPatientAllergies']);
     Route::put('/patients/{patient}/allergies', [MedicalRecordController::class, 'updatePatientAllergies']);
 
-    Route::get('/doctor/scan-qr/{qr_string}', [DoctorForPatientController::class, 'getPatientByQR']);
     Route::get('/patients/{id}/attachments', [DoctorForPatientController::class, 'getPatientAttachments']);
     Route::get('/patients/{patient_id}/analyses', [DoctorForPatientController::class, 'getPatientAnalyses']);
     Route::get('/doctor/today-appointments', [DoctorForPatientController::class, 'getTodayAppointments']);
+    Route::post('/search_patient', [DoctorForPatientController::class, 'searchPatients']);
 
     Route::post('appointments/{appointment}/prescription', [PrescriptionController::class, 'storePrescription']);
     Route::get('prescriptions/{id}/show', [PrescriptionController::class, 'showPrescription']);
@@ -123,6 +123,7 @@ Route::middleware(['auth:sanctum','role:doctor'])->group(function () {
 
     Route::get('/doctor/current-queue', [DoctorForPatientController::class, 'getCurrentQueue']);
     Route::get('/patients/{qr_token}/profile', [DoctorForPatientController::class, 'getPatientFullProfile']);
+    Route::get('/doctor/{patient}/medical-profile', [DoctorForPatientController::class, 'getPatientFullProfileById']);
     Route::put('/appointments/{appointment}/vital-signs', [MedicalRecordController::class, 'storeVitalSigns']);
     //visit home
     //Route::get('/doctor-assigned-visits', [DoctorHomeVisitController::class, 'getDoctorAssignedVisits']);

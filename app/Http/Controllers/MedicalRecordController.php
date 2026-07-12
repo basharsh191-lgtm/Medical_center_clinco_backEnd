@@ -152,43 +152,71 @@ class MedicalRecordController extends Controller
             'data' => $history
         ]);
     }
-    public function getPatientHistory(Patient $patient)
-        {
-            $user = Auth::user()->load('doctorProfile');
+public function getPatientHistory(Patient $patient)
+{
+    $user = Auth::user()->load('doctorProfile');
 
-            if (!$user->doctorProfile) {
-                return response()->json([
-                    'status'  => 'error',
-                    'message' => 'هذا الحساب ليس مسجلاً كطبيب في النظام.'
-                ], 403);
-            }
-
-            $doctorId = $user->doctorProfile->id;
-
-            // استخراج معرّف الاختصاص (أو العيادة) للطبيب الذي قام بالطلب
-            $specializationId = $user->doctorProfile->specialization_id;
-
-            // التحقق من أن هذا الطبيب له علاقة بهذا المريض (لحماية البيانات)
-            $hasRelationship = Appointment::where('doctor_id', $doctorId)
-                                        ->where('patient_id', $patient->id)
-                                        ->exists();
-
-            if (!$hasRelationship) {
-                return response()->json([
-                    'status'  => 'error',
-                    'message' => 'عذراً، غير مصرح لك بالوصول إلى السجل الطبي لهذا المريض.'
-                ], 403);
-            }
-
-            // تمرير معرّف المريض ومعرّف الاختصاص إلى الـ Service
-            $history = $this->medicalRecordService->getPatientHistory($patient->id, $specializationId);
-
-            return response()->json([
-                'status'  => 'success',
-                'message' => 'تم جلب التاريخ المرضي للمريض ضمن اختصاصك بنجاح.',
-                'data'    => $history
-            ], 200);
+    if (!$user->doctorProfile) {
+        return response()->json([
+            'status'  => 'error',
+            'message' => 'هذا الحساب ليس مسجلاً كطبيب في النظام.'
+        ], 403);
     }
+
+    $doctor = $user->doctorProfile;
+
+    // التحقق من صلاحية الوصول (هل للمريض موعد سابق أو حالي مع هذا الطبيب؟)
+    $hasRelationship = Appointment::where('doctor_id', $doctor->id)
+                                  ->where('patient_id', $patient->id)
+                                  ->exists();
+
+    if (!$hasRelationship) {
+        return response()->json([
+            'status'  => 'error',
+            'message' => 'عذراً، غير مصرح لك بالوصول إلى السجل الطبي لهذا المريض.'
+        ], 403);
+    }
+
+    // جلب التاريخ المرضي المفلتر حسب اختصاص الطبيب من خلال الـ Service
+    $history = $this->medicalRecordService->getPatientHistory($patient->id, $doctor->specialization_id);
+
+    // تحسين مخرجات الـ JSON (تنظيف تفاصيل الطبيب وتنسيق البيانات للفرونت إند)
+    $formattedHistory = collect($history)->map(function ($record) {
+        return [
+            'id'              => $record->id,
+            'appointment_id'  => $record->appointment_id,
+            'patient_id'      => $record->patient_id,
+            'diagnosis'       => $record->diagnosis,
+            'chief_complaint' => $record->chief_complaint,
+            'notes'           => $record->notes,
+            'created_at'      => $record->created_at,
+
+            // نأخذ فقط ما تحتاجه الواجهة من بيانات الطبيب
+            'doctor' => [
+                'id'        => $record->doctor?->id,
+                'full_name' => ($record->doctor?->user?->name ?? '') . ' ' . ($record->doctor?->user?->last_name ?? ''),
+                'image'     => $record->doctor?->image,
+            ],
+
+            // اختصار بيانات الموعد
+            'appointment' => [
+                'id'               => $record->appointment?->id,
+                'appointment_date' => $record->appointment?->appointment_date,
+                'start_time'       => $record->appointment?->start_time,
+            ],
+
+            // إضافات مستقبلية (إذا كانت الجداول متوفرة لديك، اتركها أو احذفها حالياً)
+            'vital_signs'    => $record->vitalSigns ?? null,
+            'prescriptions'  => $record->prescriptions ?? [],
+        ];
+    });
+
+    return response()->json([
+        'status'  => 'success',
+        'message' => 'تم جلب التاريخ المرضي للمريض ضمن اختصاصك بنجاح.',
+        'data'    => $formattedHistory
+    ], 200);
+}
     public function getPatientAllergies(Patient $patient)
     {
         $user = Auth::user()->load('doctorProfile');

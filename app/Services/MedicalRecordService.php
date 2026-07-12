@@ -191,19 +191,23 @@ class MedicalRecordService
 
         return $order->load('tests');
     }
-    public function getPatientHistory(int $patientId, int $specializationId)
-    {
-        return MedicalRecord::where('patient_id', $patientId)
-            ->whereHas('doctor', function ($query) use ($specializationId) {
-                // فلترة السجلات لتعود فقط للأطباء الذين ينتمون لنفس الاختصاص (أو العيادة)
-                $query->where('specialization_id', $specializationId);
-                // ملاحظة: إذا كان الربط في قاعدة بياناتك يعتمد على العيادة،
-                // يمكنك استبدال specialization_id بـ clinic_id
-            })
-            ->with(['doctor.user', 'appointment']) // جلب البيانات المرتبطة
-            ->orderBy('created_at', 'desc')
-            ->get();
-    }
+public function getPatientHistory(int $patientId, int $specializationId)
+{
+    return MedicalRecord::where('patient_id', $patientId)
+        ->whereHas('doctor', function ($query) use ($specializationId) {
+            // فلترة السجلات لتعود فقط للأطباء الذين ينتمون لنفس الاختصاص
+            $query->where('specialization_id', $specializationId);
+        })
+        // تعديل: أضفنا العلاقات الإضافية هنا إذا كانت موجودة في الموديل
+        ->with([
+            'doctor.user',
+            'appointment',
+            // 'prescriptions', // فك التعليق عنها عندما تنشئ الجدول والموديل
+            // 'vitalSigns'     // فك التعليق عنها عندما تنشئ الجدول والموديل
+        ])
+        ->orderBy('created_at', 'desc')
+        ->get();
+}
     public function getPatientAllergies(int $patientId)
     {
         $patient = Patient::select('id', 'blood_type', 'allergies', 'chronic_diseases','hereditary')
