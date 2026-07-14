@@ -29,4 +29,8 @@ class MedicalRecord extends Model
     {
         return $this->belongsTo(Doctor::class);
     }
+    public function homeVisit()
+    {
+        return $this->belongsTo(HomeVisit::class);
+    }
 }

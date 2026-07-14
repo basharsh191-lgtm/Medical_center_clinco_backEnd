@@ -11,12 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('prescriptions', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('appointment_id')->constrained('appointments')->cascadeOnDelete();
-            $table->text('instructions')->nullable();
-            $table->timestamps();
-        });
+Schema::create('prescriptions', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('appointment_id')->nullable()->constrained('appointments')->cascadeOnDelete();
+    $table->foreignId('home_visit_id')->nullable()->constrained('home_visits')->cascadeOnDelete();
+    $table->text('instructions')->nullable()->comment('إرشادات استخدام الوصفة');
+    $table->timestamps();
+});
     }
 
     /**

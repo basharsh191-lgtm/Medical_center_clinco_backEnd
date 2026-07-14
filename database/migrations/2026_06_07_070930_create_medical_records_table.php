@@ -11,16 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('medical_records', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('appointment_id')->constrained('appointments')->cascadeOnDelete();
-            $table->foreignId('patient_id')->constrained('patients')->cascadeOnDelete();
-            $table->foreignId('doctor_id')->constrained('doctors')->cascadeOnDelete();
-            $table->text('diagnosis')->comment('التشخيص الطيبي');
-            $table->text('chief_complaint')->comment('الشكوى الرئيسية للمريض');
-            $table->text('notes')->nullable()->comment('ملاحظات إضافية'); // جعلته nullable مرونةً في حال لم توجد ملاحظات
-            $table->timestamps();
-        });
+Schema::create('medical_records', function (Blueprint $table) {
+        $table->id();
+        $table->foreignId('appointment_id')->nullable()->constrained('appointments')->cascadeOnDelete();
+        $table->foreignId('home_visit_id')->nullable()->constrained('home_visits')->cascadeOnDelete();
+        $table->foreignId('patient_id')->constrained('patients')->cascadeOnDelete();
+        $table->foreignId('doctor_id')->constrained('doctors')->cascadeOnDelete();
+        $table->text('diagnosis')->comment('التشخيص الطيبي');
+        $table->text('chief_complaint')->comment('الشكوى الرئيسية للمريض');
+        $table->text('notes')->nullable()->comment('ملاحظات إضافية');
+        $table->timestamps();
+    });
     }
 
     /**

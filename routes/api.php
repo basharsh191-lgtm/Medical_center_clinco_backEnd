@@ -104,6 +104,17 @@ Route::middleware(['auth:sanctum','role:doctor'])->group(function () {
 
     //visit home
     //Route::get('/doctor-assigned-visits', [DoctorHomeVisitController::class, 'getDoctorAssignedVisits']);
+// جلب الزيارات الحالية للطبيب
+    Route::get('/doctor/home-visits', [DoctorHomeVisitController::class, 'getMyHomeVisits']);
 
+    // بدء التوجه للمريض
+    Route::put('/doctor/home-visits/{HomeVisite}/start', [DoctorHomeVisitController::class, 'startVisit']);
+
+    // سجل الزيارات المنتهية
+    Route::get('/doctor/home-visits/history', [DoctorHomeVisitController::class, 'getVisitHistory']);
+
+    Route::post('/storeMedicalRecord/home-visit', [MedicalRecordController::class, 'storeHomeVisitMedicalRecord']);
+
+        Route::post('doctor/{HomeVisite}/prescription', [PrescriptionController::class, 'storePrescriptionHomeVisite']);
 
 });

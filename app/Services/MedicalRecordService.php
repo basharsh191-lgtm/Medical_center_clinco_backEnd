@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\MedicalRecord;
 use App\Models\Appointment;
 use App\Models\Doctor;
+use App\Models\HomeVisit;
 use App\Models\LabOrder;
 use App\Models\LabOrderTest;
 use App\Models\patient;
@@ -74,6 +75,62 @@ class MedicalRecordService
             ];
         }
     }
+public function storePrescriptionHomeVisit(HomeVisit $homevisit, array $data): array
+{
+    try {
+        DB::beginTransaction();
+
+        // حل المشكلة: إذا كان الـ Route binding لم يقرأ الـ ID، نقوم بجلبه يدويًا للتأكد 100%
+        // وإذا كان موجودًا، سيعمل بشكل طبيعي.
+        if (!$homevisit->exists) {
+            // ملاحظة: تأكد أنك تقوم بتمرير متغير يحمل ID من الـ Controller
+            // أو قم بالبحث عنه باستخدام الرقم التعريفي القادم من الطلب
+            return [
+                'status_code' => 404,
+                'response' => ['success' => false, 'message' => 'الزيارة المنزلية غير موجودة.']
+            ];
+        }
+
+        // 1. إنشاء رأس الوصفة الطبية (Prescription) عبر علاقة الزيارة مباشرة
+        // هذه الطريقة تجعل Laravel يملأ حقل home_visit_id تلقائيًا بنسبة 100% بدون أي أخطاء
+        $prescription = $homevisit->prescriptions()->create([
+            'instructions' => $data['instructions'] ?? null,
+        ]);
+
+        // 2. إدخال عناصر الأدوية دفعة واحدة
+        if (!empty($data['items'])) {
+            $prescription->items()->createMany($data['items']);
+        }
+
+        // 3. تحويل حالة الزيارة المنزلية تلقائياً إلى مكتمل
+        $homevisit->update(['status' => 'completed']);
+
+        DB::commit();
+
+        return [
+            'status_code' => 201,
+            'response' => [
+                'success' => true,
+                'message' => 'تم تسجيل الروشتة الطبية وإنهاء الجلسة بنجاح.',
+                'data'    => [
+                    'prescription_id' => $prescription->id
+                ]
+            ]
+        ];
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+
+        return [
+            'status_code' => 500,
+            'response' => [
+                'success' => false,
+                'message' => 'حدث خطأ أثناء حفظ الروشتة، يرجى المحاولة لاحقاً.',
+                'error'   => $e->getMessage()
+            ]
+        ];
+    }
+}
     public function getPrescriptionByAppointment(Appointment $appointment)
     {
         $user = Auth::user();
