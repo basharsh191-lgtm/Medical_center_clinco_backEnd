@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Route;
 //Auth
     Route::post('/register',[AuthController::class,'register']);
     Route::post('/login',[AuthController::class,'login'])->middleware('throttle:5,1'); // تقييد محاولات تسجيل الدخول لمنع الهجمات
+    Route::post('/doctorLogin',[AuthController::class,'doctorLogin'])->middleware('throttle:5,1'); // تقييد محاولات تسجيل الدخول لمنع الهجمات
     Route::post('logout',[AuthController::class,'logout'])->middleware('auth:sanctum');
     Route::post('/password/forgot', [AuthController::class, 'forgotPassword']);
     Route::post('/password/reset', [AuthController::class, 'resetPassword']);

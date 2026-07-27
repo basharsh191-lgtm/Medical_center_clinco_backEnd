@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\OTPService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
@@ -70,6 +71,35 @@ public function login(LoginRequest $request)
             ['massage'=>'User log in Succssfully ',
                     'Token'=>$token
                     ], 201);
+}
+public function doctorLogin(Request $request)
+{
+// 1. التحقق من صحة البيانات
+    $credentials = $request->validate([
+        'email' => 'required|email',
+        'password' => 'required',
+    ]);
+
+    if (!Auth::attempt($credentials)) {
+        return response()->json(['message' => 'بيانات الدخول غير صحيحة'], 401);
+    }
+
+    $user = Auth::user();
+
+    // 2. التاكد من أن المستخدم يحمل دور طبيب عبر Spatie
+    if (!$user->hasRole('doctor')) {
+        return response()->json([
+            'message' => 'هذا الحساب غير مصرح له بالدخول إلى تطبيق الأطباء.'
+        ], 403);
+    }
+
+    // 3. إنشاء توكن مخصص بدَور الطبيب (Abilities)
+    $token = $user->createToken('doctor-app-token', ['access-doctor-app'])->plainTextToken;
+
+    return response()->json([
+        'token' => $token,
+        'user' => $user
+    ]);
 }
 public function logout(Request $request)
 {
