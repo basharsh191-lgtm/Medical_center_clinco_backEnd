@@ -19,4 +19,9 @@ class Prescription extends Model
     {
         return $this->belongsTo(MedicalRecord::class);
     }
+    public function homeVisit()
+    {
+        return $this->belongsTo(HomeVisit::class);
+    }
+
 }

@@ -6,11 +6,12 @@ use App\Http\Requests\StoreMedicalRecordRequest;
 use App\Http\Requests\UpdateMedicalRecordRequest;
 use App\Http\Requests\UpdatePatientAllergiesRequest;
 use App\Models\Appointment;
+use App\Models\HomeVisit;
 use App\Models\MedicalRecord;
-use App\Models\patient;
+use App\Models\Patient;
 use App\Services\MedicalRecordService;
-use Auth;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class MedicalRecordController extends Controller
 {
@@ -20,6 +21,7 @@ class MedicalRecordController extends Controller
     {
         $this->medicalRecordService = $medicalRecordService;
     }
+
     public function storeMedicalRecord(StoreMedicalRecordRequest $request, Appointment $appointment)
     {
         $user = Auth::user()->load('doctorProfile');
@@ -54,8 +56,8 @@ class MedicalRecordController extends Controller
 
         // حقن الـ IDs الموثوقة من الباك إند مباشرة
         $data['appointment_id'] = $appointment->id;
-        $data['patient_id'] = $appointment->patient_id;
-        $data['doctor_id'] = $doctorId;
+        $data['patient_id']     = $appointment->patient_id;
+        $data['doctor_id']      = $doctorId;
 
         $record = $this->medicalRecordService->createRecord($data);
 
@@ -65,6 +67,7 @@ class MedicalRecordController extends Controller
             'data'    => $record
         ], 201);
     }
+
     public function updateMedicalRecord(UpdateMedicalRecordRequest $request, $id)
     {
         $user = Auth::user()->load('doctorProfile');
@@ -76,28 +79,34 @@ class MedicalRecordController extends Controller
                 'message' => 'هذا الحساب ليس مسجلاً كطبيب في النظام.'
             ], 403);
         }
+
         $doctorId = $user->doctorProfile->id;
         $record = MedicalRecord::find($id);
+
         if (!$record) {
             return response()->json([
                 'status'  => 'error',
                 'message' => 'عذراً، السجل الطبي غير موجود.'
             ], 404);
         }
+
         if ($record->doctor_id !== $doctorId) {
             return response()->json([
                 'status'  => 'error',
                 'message' => 'عذراً، لا تملك صلاحية تعديل هذا السجل الطبي لأنه غير مسجل باسمك.'
             ], 403);
         }
+
         $data = $request->validated();
         $record->update($data);
+
         return response()->json([
             'status'  => 'success',
             'message' => 'تم تعديل السجل الطبي بنجاح.',
             'data'    => $record
         ], 200);
     }
+
     public function destroyMedicalRecord($id)
     {
         $user = Auth::user()->load('doctorProfile');
@@ -109,114 +118,157 @@ class MedicalRecordController extends Controller
                 'message' => 'هذا الحساب ليس مسجلاً كطبيب في النظام.'
             ], 403);
         }
+
         $doctorId = $user->doctorProfile->id;
         $record = MedicalRecord::find($id);
+
         if (!$record) {
             return response()->json([
                 'status'  => 'error',
                 'message' => 'عذراً، السجل الطبي المُراد حذفه غير موجود مسبقاً.'
             ], 404);
         }
+
         if ($record->doctor_id !== $doctorId) {
             return response()->json([
                 'status'  => 'error',
                 'message' => 'عذراً، لا تملك صلاحية حذف هذا السجل الطبي لأنه غير مسجل باسمك.'
             ], 403);
         }
+
         $record->delete();
+
         return response()->json([
             'status'  => 'success',
             'message' => 'تم حذف السجل الطبي بنجاح.'
         ], 200);
     }
+
+    public function storePrescriptionHomeVisite(Request $request, $homevisit_id)
+    {
+        $user = Auth::user()->load('doctorProfile');
+
+        // 1. التحقق من صلاحية الطبيب
+        if (!$user->doctorProfile) {
+            return response()->json([
+                'success' => false,
+                'message' => 'هذا الحساب ليس مسجلاً كطبيب في النظام.'
+            ], 403);
+        }
+
+        // 2. التحقق من صحة البيانات القادمة في الـ Request
+        $validatedData = $request->validate([
+            'instructions'           => 'nullable|string',
+            'items'                  => 'required|array|min:1',
+            'items.*.medicine_name'  => 'required|string|max:255',
+            'items.*.dosage'         => 'required|string|max:100',
+            'items.*.frequency'      => 'required|string|max:100',
+            'items.*.duration'       => 'required|string|max:100',
+        ]);
+
+        // 3. جلب الزيارة يدوياً باستخدام الـ id الصريح القادم من الرابط
+        $homevisit = HomeVisit::findOrFail($homevisit_id);
+
+        // 4. التحقق من وجود الزيارة وحالتها
+        if (!$homevisit || in_array($homevisit->status, ['completed', 'cancelled'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'لا يمكنك إضافة روشتة لزيارة منزلية غير موجودة، منتهية أو ملغاة.'
+            ], 422);
+        }
+
+        // 5. استدعاء الـ Service وإرسال الموديل
+        $result = $this->medicalRecordService->storePrescriptionHomeVisit($homevisit, $validatedData);
+
+        return response()->json($result['response'], $result['status_code']);
+    }
+
     public function getMyMedicalHistory()
     {
         // 1. جلب رقم المريض من التوكن بكل أمان
         $patientId = Auth::user()->patient->id;
 
-        // 2. جلب السجلات الطبية مع العلاقات المطلوبة (Eager Loading)
+        // 2. جلب السجلات الطبية مع العلاقات المطلوبة
         $history = MedicalRecord::with([
-            'doctor.user:id,name', // جلب اسم الدكتور فقط لتخفيف حجم الداتا
-            'appointment:id,appointment_date', // جلب تاريخ الموعد
-            // إذا كنت رابط الوصفات أو المرفقات بالسجل أو بالموعد، بتجيبهم هون
+            'doctor.user:id,name',
+            'appointment:id,appointment_date',
             'appointment.attachments',
         ])
         ->where('patient_id', $patientId)
-        ->orderBy('created_at', 'desc') // أحدث زيارة أولاً
+        ->orderBy('created_at', 'desc')
         ->get();
 
-        // 3. ترتيب البيانات وإرسالها للموبايل
+        // 3. ترتيب البيانات وإرسالها
         return response()->json([
-            'status' => 'success',
+            'status'  => 'success',
             'message' => 'تم جلب السجل الطبي بنجاح',
-            'data' => $history
+            'data'    => $history
         ]);
     }
-public function getPatientHistory(Patient $patient)
-{
-    $user = Auth::user()->load('doctorProfile');
 
-    if (!$user->doctorProfile) {
+    public function getPatientHistory(Patient $patient)
+    {
+        $user = Auth::user()->load('doctorProfile');
+
+        if (!$user->doctorProfile) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'هذا الحساب ليس مسجلاً كطبيب في النظام.'
+            ], 403);
+        }
+
+        $doctor = $user->doctorProfile;
+
+        // التحقق من صلاحية الوصول (وجود موعد سابق أو حالي)
+        $hasRelationship = Appointment::where('doctor_id', $doctor->id)
+                                      ->where('patient_id', $patient->id)
+                                      ->exists();
+
+        if (!$hasRelationship) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'عذراً، غير مصرح لك بالوصول إلى السجل الطبي لهذا المريض.'
+            ], 403);
+        }
+
+        // جلب التاريخ المرضي المفلتر حسب اختصاص الطبيب من خلال الـ Service
+        $history = $this->medicalRecordService->getPatientHistory($patient->id, $doctor->specialization_id);
+
+        // تحسين مخرجات الـ JSON
+        $formattedHistory = collect($history)->map(function ($record) {
+            return [
+                'id'              => $record->id,
+                'appointment_id'  => $record->appointment_id,
+                'patient_id'      => $record->patient_id,
+                'diagnosis'       => $record->diagnosis,
+                'chief_complaint' => $record->chief_complaint,
+                'notes'           => $record->notes,
+                'created_at'      => $record->created_at,
+
+                'doctor' => [
+                    'id'        => $record->doctor?->id,
+                    'full_name' => ($record->doctor?->user?->name ?? '') . ' ' . ($record->doctor?->user?->last_name ?? ''),
+                    'image'     => $record->doctor?->image,
+                ],
+
+                'appointment' => [
+                    'id'               => $record->appointment?->id,
+                    'appointment_date' => $record->appointment?->appointment_date,
+                    'start_time'       => $record->appointment?->start_time,
+                ],
+
+                'vital_signs'   => $record->vitalSigns ?? null,
+                'prescriptions' => $record->prescriptions ?? [],
+            ];
+        });
+
         return response()->json([
-            'status'  => 'error',
-            'message' => 'هذا الحساب ليس مسجلاً كطبيب في النظام.'
-        ], 403);
+            'status'  => 'success',
+            'message' => 'تم جلب التاريخ المرضي للمريض ضمن اختصاصك بنجاح.',
+            'data'    => $formattedHistory
+        ], 200);
     }
 
-    $doctor = $user->doctorProfile;
-
-    // التحقق من صلاحية الوصول (هل للمريض موعد سابق أو حالي مع هذا الطبيب؟)
-    $hasRelationship = Appointment::where('doctor_id', $doctor->id)
-                                  ->where('patient_id', $patient->id)
-                                  ->exists();
-
-    if (!$hasRelationship) {
-        return response()->json([
-            'status'  => 'error',
-            'message' => 'عذراً، غير مصرح لك بالوصول إلى السجل الطبي لهذا المريض.'
-        ], 403);
-    }
-
-    // جلب التاريخ المرضي المفلتر حسب اختصاص الطبيب من خلال الـ Service
-    $history = $this->medicalRecordService->getPatientHistory($patient->id, $doctor->specialization_id);
-
-    // تحسين مخرجات الـ JSON (تنظيف تفاصيل الطبيب وتنسيق البيانات للفرونت إند)
-    $formattedHistory = collect($history)->map(function ($record) {
-        return [
-            'id'              => $record->id,
-            'appointment_id'  => $record->appointment_id,
-            'patient_id'      => $record->patient_id,
-            'diagnosis'       => $record->diagnosis,
-            'chief_complaint' => $record->chief_complaint,
-            'notes'           => $record->notes,
-            'created_at'      => $record->created_at,
-
-            // نأخذ فقط ما تحتاجه الواجهة من بيانات الطبيب
-            'doctor' => [
-                'id'        => $record->doctor?->id,
-                'full_name' => ($record->doctor?->user?->name ?? '') . ' ' . ($record->doctor?->user?->last_name ?? ''),
-                'image'     => $record->doctor?->image,
-            ],
-
-            // اختصار بيانات الموعد
-            'appointment' => [
-                'id'               => $record->appointment?->id,
-                'appointment_date' => $record->appointment?->appointment_date,
-                'start_time'       => $record->appointment?->start_time,
-            ],
-
-            // إضافات مستقبلية (إذا كانت الجداول متوفرة لديك، اتركها أو احذفها حالياً)
-            'vital_signs'    => $record->vitalSigns ?? null,
-            'prescriptions'  => $record->prescriptions ?? [],
-        ];
-    });
-
-    return response()->json([
-        'status'  => 'success',
-        'message' => 'تم جلب التاريخ المرضي للمريض ضمن اختصاصك بنجاح.',
-        'data'    => $formattedHistory
-    ], 200);
-}
     public function getPatientAllergies(Patient $patient)
     {
         $user = Auth::user()->load('doctorProfile');
@@ -227,13 +279,16 @@ public function getPatientHistory(Patient $patient)
                 'message' => 'هذا الحساب ليس مسجلاً كطبيب في النظام.'
             ], 403);
         }
+
         $allergiesData = $this->medicalRecordService->getPatientAllergies($patient->id);
+
         return response()->json([
             'status'  => 'success',
             'message' => 'تم جلب التحسسات الدوائية والمعلومات الحيوية بنجاح.',
             'data'    => $allergiesData
-            ], 200);
+        ], 200);
     }
+
     public function updatePatientAllergies(UpdatePatientAllergiesRequest $request, Patient $patient)
     {
         $user = Auth::user()->load('doctorProfile');
@@ -248,7 +303,7 @@ public function getPatientHistory(Patient $patient)
 
         $doctorId = $user->doctorProfile->id;
 
-        // 2. حماية البيانات: التحقق من وجود علاقة (موعد) بين الطبيب والمريض لمنع التعديل العشوائي
+        // 2. التحقق من وجود علاقة بين الطبيب والمريض
         $hasRelationship = Appointment::where('doctor_id', $doctorId)
                                       ->where('patient_id', $patient->id)
                                       ->exists();
@@ -260,7 +315,7 @@ public function getPatientHistory(Patient $patient)
             ], 403);
         }
 
-        // 3. جلب البيانات التي تم التحقق منها من الـ Request
+        // 3. جلب البيانات المفحوصة
         $data = $request->validated();
 
         // 4. استدعاء الـ Service لتنفيذ التعديل
@@ -272,6 +327,7 @@ public function getPatientHistory(Patient $patient)
             'data'    => $updatedData
         ], 200);
     }
+
     public function storeVitalSigns(Request $request, Appointment $appointment)
     {
         $user = Auth::user()->load('doctorProfile');
@@ -286,7 +342,7 @@ public function getPatientHistory(Patient $patient)
 
         $doctorId = $user->doctorProfile->id;
 
-        // التحقق من ملكية الموعد للطبيب الحالي لضمان الأمن
+        // التحقق من ملكية الموعد للطبيب الحالي
         if ($appointment->doctor_id !== $doctorId) {
             return response()->json([
                 'status'  => 'error',
@@ -294,17 +350,15 @@ public function getPatientHistory(Patient $patient)
             ], 403);
         }
 
-        // التحقق من البيانات القادمة من الريكويست
+        // التحقق من البيانات القادمة
         $validated = $request->validate([
-            'weight' => 'nullable|integer|min:1',
-            'taller' => 'nullable|integer|min:1', // الطول
-            // إذا كنت قد أضفت حقول الضغط والحرارة وال سكر إلى جدول المريض أو جدول منفصل، يمكنك التحقق منها هنا:
+            'weight'         => 'nullable|integer|min:1',
+            'taller'         => 'nullable|integer|min:1',
             'blood_pressure' => 'nullable|string',
             'temperature'    => 'nullable|numeric',
             'blood_sugar'    => 'nullable|string',
         ]);
 
-        // جلب المريض المرتبط بالموعد لتحديث بياناته الحيوية الثابتة
         $patient = $appointment->patient;
 
         if (!$patient) {
@@ -320,9 +374,6 @@ public function getPatientHistory(Patient $patient)
             'taller' => $validated['taller'] ?? $patient->taller,
         ]);
 
-        // هنا: إذا كان لديك جدول خاص بالـ Vital Signs التاريخية لكل موعد، يمكنك إدخال السجل عبر السيرفيس:
-        // $vitalSignRecord = $this->medicalRecordService->storeAppointmentVitals($appointment->id, $validated);
-
         return response()->json([
             'status'  => 'success',
             'message' => 'تم تسجيل وتحديث المؤشرات الحيوية للمريض بنجاح.',
@@ -331,12 +382,10 @@ public function getPatientHistory(Patient $patient)
                 'patient_id'     => $patient->id,
                 'weight'         => $patient->weight,
                 'taller'         => $patient->taller,
-                // يمكنك إرجاع الحقول الإضافية إذا تم حفظها في مكان آخر
                 'blood_pressure' => $validated['blood_pressure'] ?? null,
                 'temperature'    => $validated['temperature'] ?? null,
                 'blood_sugar'    => $validated['blood_sugar'] ?? null,
             ]
         ], 201);
     }
-
 }

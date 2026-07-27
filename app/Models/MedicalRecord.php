@@ -33,4 +33,8 @@ class MedicalRecord extends Model
     {
         return $this->hasOne(Prescription::class);
     }
+    public function homeVisit()
+    {
+        return $this->belongsTo(HomeVisit::class);
+    }
 }
