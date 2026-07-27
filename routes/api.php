@@ -91,9 +91,9 @@ Route::post('/receptionist/check-in', [ReceptionistScheduleController::class, 'c
 Route::get('/show-home-visits', [ReceptionHomeVisitController::class, 'getClinicHomeVisits']);
 Route::post('/approve-home-visit/{id}', [ReceptionHomeVisitController::class, 'approveAndAssignDoctor']);
 Route::post('/reject-home-visit/{id}', [ReceptionHomeVisitController::class, 'rejectVisit']);
-
-
-
+Route::get('/rejected-home-visitsis-doctor', [ReceptionHomeVisitController::class, 'getRejectedVisits']);
+Route::get('/home-visits/{id}', [ReceptionHomeVisitController::class, 'getSingleHomeVisit']);
+Route::get('/home-visits/{visitId}/available-doctors', [ReceptionHomeVisitController::class, 'getAvailableDoctorsForHomeVisit']);
 });
 //doctor
 Route::middleware(['auth:sanctum','role:doctor'])->group(function () {
@@ -105,15 +105,9 @@ Route::middleware(['auth:sanctum','role:doctor'])->group(function () {
 
     //visit home
     //Route::get('/doctor-assigned-visits', [DoctorHomeVisitController::class, 'getDoctorAssignedVisits']);
-    // جلب الزيارات الحالية للطبيب
-    Route::get('/doctor/home-visits', [DoctorHomeVisitController::class, 'getMyHomeVisits']);
-    // بدء التوجه للمريض
-    Route::put('/doctor/home-visits/{HomeVisite}/start', [DoctorHomeVisitController::class, 'startVisit']);
-    // سجل الزيارات المنتهية
-    Route::get('/doctor/home-visits/history', [DoctorHomeVisitController::class, 'getVisitHistory']);
     //سجل طبي في امنزل المريض
     Route::post('/storeMedicalRecord/home-visit', [MedicalRecordController::class, 'storeHomeVisitMedicalRecord']);
-    
+
     //راشيتة دواء في منزل المريض
     Route::post('/home-visits/{homevisit_id}/prescription', [PrescriptionController::class, 'storePrescriptionHomeVisite']);
 
@@ -130,4 +124,21 @@ Route::middleware(['auth:sanctum','role:doctor'])->group(function () {
     Route::put('lab-orders/{id}', [HomeCareLabOrderController::class, 'update']);
     // إلغاء طلب مختبر
     Route::delete('lab-orders/{id}', [HomeCareLabOrderController::class, 'cancel']);
+
+    ////
+    // جلب الزيارات الحالية والأرشيف
+    Route::get('/doctor/home-visits', [DoctorHomeVisitController::class, 'getMyHomeVisits']);
+    Route::get('/doctor/home-visits/history', [DoctorHomeVisitController::class, 'getVisitHistory']);
+
+    // قبول ورفض طلب الزيارة
+    Route::put('/doctor/home-visits/{id}/accept', [DoctorHomeVisitController::class, 'acceptVisit']);
+    Route::put('/doctor/home-visits/{id}/reject', [DoctorHomeVisitController::class, 'rejectVisit']);
+
+    // تتبع حالة التنقل للزيارة
+    Route::put('/doctor/home-visits/{id}/start', [DoctorHomeVisitController::class, 'startVisit']);
+    Route::put('/doctor/home-visits/{id}/arrive', [DoctorHomeVisitController::class, 'arriveVisit']);
+    Route::put('/doctor/home-visits/{id}/complete', [DoctorHomeVisitController::class, 'completeVisit']);
+
+
 });
+

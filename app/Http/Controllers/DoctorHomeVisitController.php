@@ -8,122 +8,214 @@ use Illuminate\Support\Facades\Auth;
 
 class DoctorHomeVisitController extends Controller
 {
-    public function getMyHomeVisits(Request $request)
+public function getMyHomeVisits(Request $request)
     {
-        // 1. جلب كائن المستخدم الحالي
-        $user = Auth::user();
+        $doctorId = Auth::user()->doctorProfile->id;
 
-        // 2. التحقق من وجود المستخدم وامتلاكه لعلاقة doctorProfile
-        if (!$user || !$user->doctorProfile) {
-            return response()->json([
-                'success' => false,
-                'message' => 'هذا المستخدم ليس مسجلاً كطبيب في النظام أو لم يسجل دخوله بعد.',
-                'data'    => [
-                    'visits' => [],
-                    'pagination' => null
-                ]
-            ], 403);
-        }
-
-        // 3. جلب معرف الطبيب الصحيح من العلاقة (doctorProfile)
-        $doctorId = $user->doctorProfile->id;
-
-        // 4. جلب الزيارات بناءً على الـ doctor_id الرقمي الصحيح
         $visits = HomeVisit::where('doctor_id', $doctorId)
-            ->whereIn('status', ['assigned', 'on_the_way'])
-            ->with(['patient.user']) // جلب بيانات المريض والمستخدم المرتبط به
+            ->whereIn('status', ['assigned', 'accepted', 'on_the_way', 'arrived'])
+            ->with(['patient.user'])
             ->orderBy('visit_date', 'asc')
-            ->orderBy('start_time', 'asc')
-            ->paginate(15);
+            ->get();
 
         return response()->json([
             'success' => true,
-            'message' => 'تم جلب الزيارات المنزلية الحالية بنجاح',
-            'data'    => [
-                'visits' => $visits->items(),
-                'pagination' => [
-                    'current_page' => $visits->currentPage(),
-                    'last_page'    => $visits->lastPage(),
-                    'per_page'     => $visits->perPage(),
-                    'total'        => $visits->total(),
-                    'has_more'     => $visits->hasMorePages(),
-                ]
-            ]
+            'message' => 'تم جلب زيارات الطبيب الحالية بنجاح',
+            'data'    => $visits
         ], 200);
     }
 
-/**
-     * 2. بدء التوجه للمريض (تغيير الحالة إلى on_the_way)
+    /**
+     * قبول الزيارة من قبل الطبيب
      */
-    public function startVisit($id)
-    {
-        $user = Auth::user();
+public function acceptVisit($id)
+{
+    $doctorProfile = Auth::user()?->doctorProfile;
 
-        // التحقق من أن المستخدم لديه ملف طبيب مرتبط به
-        if (!$user || !$user->doctorProfile) {
+    if (!$doctorProfile) {
+        return response()->json([
+            'success' => false,
+            'message' => 'حساب المستخدم غير مرتبط بملف طبيب.'
+        ], 403);
+    }
+    $visit = HomeVisit::find($id);
+
+    if (!$visit) {
+        return response()->json([
+            'success' => false,
+            'message' => 'الزيارة المنزلية غير موجودة.'
+        ], 404);
+    }
+    if ($visit->doctor_id !== $doctorProfile->id) {
+        return response()->json([
+            'success' => false,
+            'message' => 'غير مصرح لك بقبول هذه الزيارة (مخصصة لطبيب آخر).'
+        ], 403);
+    }
+
+    if ($visit->status !== 'assigned') {
+        return response()->json([
+            'success' => false,
+            'message' => 'لا يمكن قبول هذه الزيارة لأن حالتها الحالية هي: ' . $visit->status
+        ], 422);
+    }
+    $visit->update([
+        'status' => 'accepted'
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'تم قبول الزيارة بنجاح، يمكنك الآن بدء التوجه عند الاستعداد'
+    ], 200);
+}
+
+    /**
+     * اعتذار/رفض الزيارة من قبل الطبيب (لتقوم الإدارة أو الاستقبال بتعيين طبيب آخر)
+     */
+    public function rejectVisit(Request $request, $id)
+    {
+        $request->validate([
+            'rejection_reason' => 'required|string|max:255',
+        ]);
+
+        $doctorProfile = Auth::user()->doctorProfile;
+
+        if (!$doctorProfile) {
             return response()->json([
                 'success' => false,
-                'message' => 'هذا المستخدم ليس مسجلاً كطبيب في النظام.'
+                'message' => 'حساب المستخدم غير مرتبط بملف طبيب.'
             ], 403);
         }
 
-        $doctorId = $user->doctorProfile->id;
-
-        // البحث عن الزيارة الخاصة بالدكتور وتكون حالتها assigned فقط (ليبدأها)
-        $visit = HomeVisit::where('doctor_id', $doctorId)
+        $visit = HomeVisit::where('id', $id)
+            ->where('doctor_id', $doctorProfile->id)
             ->where('status', 'assigned')
-            ->findOrFail($id);
+            ->firstOrFail();
 
-        // تحديث الحالة إلى في الطريق
+        $visit->update([
+            'status'           => 'rejected',
+            'rejection_reason' => $request->rejection_reason,
+            // تفريغ الطبيب ليتمكن الاستقبال من إعادة إسنادها لطبيب آخر
+            'doctor_id'        => null
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم تسجيل الاعتذار عن الزيارة وتحديث الحالة للاستقبال'
+        ], 200);
+    }
+
+    /**
+     * بدء التوجه إلى منزل المريض
+     */
+    public function startVisit($id)
+    {
+        $doctorProfile = Auth::user()->doctorProfile;
+
+        if (!$doctorProfile) {
+            return response()->json([
+                'success' => false,
+                'message' => 'حساب المستخدم غير مرتبط بملف طبيب.'
+            ], 403);
+        }
+
+        $visit = HomeVisit::where('id', $id)
+            ->where('doctor_id', $doctorProfile->id)
+            ->where('status', 'accepted')
+            ->firstOrFail();
+
         $visit->update([
             'status' => 'on_the_way'
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'تم بدء الرحلة والتوجه إلى موقع المريض بنجاح',
-            'data'    => $visit
+            'message' => 'تم تغيير حالة الزيارة إلى: في الطريق إلى المريض'
         ], 200);
     }
 
     /**
-     * 4. سجل الزيارات المنتهية (المكتملة والملغاة)
+     * تأكيد الوصول لمنزل المريض
      */
-    public function getVisitHistory(Request $request)
+    public function arriveVisit($id)
     {
-        $user = Auth::user();
+        $doctorProfile = Auth::user()->doctorProfile;
 
-        // التحقق من أن المستخدم لديه ملف طبيب مرتبط به
-        if (!$user || !$user->doctorProfile) {
+        if (!$doctorProfile) {
             return response()->json([
                 'success' => false,
-                'message' => 'هذا المستخدم ليس مسجلاً كطبيب في النظام.',
-                'data'    => ['visits' => []]
+                'message' => 'حساب المستخدم غير مرتبط بملف طبيب.'
             ], 403);
         }
 
-        $doctorId = $user->doctorProfile->id;
+        $visit = HomeVisit::where('id', $id)
+            ->where('doctor_id', $doctorProfile->id)
+            ->where('status', 'on_the_way')
+            ->firstOrFail();
 
-        // جلب الزيارات المنتهية (سواء اكتملت أو ألغيت)
-        $history = HomeVisit::where('doctor_id', $doctorId)
-            ->whereIn('status', ['completed', 'cancelled'])
+        $visit->update([
+            'status' => 'arrived'
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم تأكيد الوصول لمنزل المريض، يمكنك البدء بالفحص وتمرير السجل الطبي'
+        ], 200);
+    }
+
+    /**
+     * إتمام وإنهاء الزيارة بالكامل
+     */
+    public function completeVisit($id)
+    {
+        $doctorProfile = Auth::user()->doctorProfile;
+
+        if (!$doctorProfile) {
+            return response()->json([
+                'success' => false,
+                'message' => 'حساب المستخدم غير مرتبط بملف طبيب.'
+            ], 403);
+        }
+
+        $visit = HomeVisit::where('id', $id)
+            ->where('doctor_id', $doctorProfile->id)
+            ->where('status', 'arrived')
+            ->firstOrFail();
+
+        $visit->update([
+            'status' => 'completed'
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم إتمام الزيارة بنجاح وإغلاق الملف'
+        ], 200);
+    }
+
+    /**
+     * أرشيف الزيارة المنتهية للطبيب
+     */
+    public function getVisitHistory()
+    {
+        $doctorProfile = Auth::user()->doctorProfile;
+
+        if (!$doctorProfile) {
+            return response()->json([
+                'success' => false,
+                'message' => 'حساب المستخدم غير مرتبط بملف طبيب.'
+            ], 403);
+        }
+
+        $history = HomeVisit::where('doctor_id', $doctorProfile->id)
+            ->where('status', 'completed')
             ->with(['patient.user'])
-            ->orderBy('updated_at', 'desc') // الترتيب حسب تاريخ الإغلاق الأحدث
+            ->orderBy('updated_at', 'desc')
             ->paginate(15);
 
         return response()->json([
             'success' => true,
-            'message' => 'تم جلب سجل الزيارات المنتهية بنجاح',
-            'data'    => [
-                'visits' => $history->items(),
-                'pagination' => [
-                    'current_page' => $history->currentPage(),
-                    'last_page'    => $history->lastPage(),
-                    'per_page'     => $history->perPage(),
-                    'total'        => $history->total(),
-                    'has_more'     => $history->hasMorePages(),
-                ]
-            ]
+            'message' => 'تم جلب أرشيف الزيارات المكتملة بنجاح',
+            'data'    => $history
         ], 200);
     }
 }
