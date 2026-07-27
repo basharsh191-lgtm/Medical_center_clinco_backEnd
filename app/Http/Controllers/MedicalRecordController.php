@@ -155,8 +155,6 @@ class MedicalRecordController extends Controller
                 'message' => 'هذا الحساب ليس مسجلاً كطبيب في النظام.'
             ], 403);
         }
-
-        // 2. التحقق من صحة البيانات القادمة في الـ Request
         $validatedData = $request->validate([
             'instructions'           => 'nullable|string',
             'items'                  => 'required|array|min:1',
@@ -168,8 +166,6 @@ class MedicalRecordController extends Controller
 
         // 3. جلب الزيارة يدوياً باستخدام الـ id الصريح القادم من الرابط
         $homevisit = HomeVisit::findOrFail($homevisit_id);
-
-        // 4. التحقق من وجود الزيارة وحالتها
         if (!$homevisit || in_array($homevisit->status, ['completed', 'cancelled'])) {
             return response()->json([
                 'success' => false,
