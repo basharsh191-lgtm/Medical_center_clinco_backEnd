@@ -13,7 +13,8 @@ return new class extends Migration
     {
             Schema::create('lab_orders', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('appointment_id')->constrained('appointments')->cascadeOnDelete();
+            $table->foreignId('appointment_id')->nullable()->constrained('appointments')->cascadeOnDelete();
+            $table->foreignId('home_visit_id')->nullable()->constrained('home_visits')->cascadeOnDelete();
             $table->text('doctor_notes')->nullable();
             $table->enum('overall_status', ['pending', 'completed', 'cancelled'])->default('pending');
             $table->timestamps();

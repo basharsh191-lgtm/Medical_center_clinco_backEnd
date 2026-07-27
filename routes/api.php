@@ -6,6 +6,7 @@ use App\Http\Controllers\ReceptionistScheduleController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClincController;
 use App\Http\Controllers\DoctorHomeVisitController;
+use App\Http\Controllers\HomeCareLabOrderController;
 use App\Http\Controllers\HomeVisitController;
 use App\Http\Controllers\LabOrderController;
 use App\Http\Controllers\MedicalRecordController;
@@ -104,17 +105,29 @@ Route::middleware(['auth:sanctum','role:doctor'])->group(function () {
 
     //visit home
     //Route::get('/doctor-assigned-visits', [DoctorHomeVisitController::class, 'getDoctorAssignedVisits']);
-// جلب الزيارات الحالية للطبيب
+    // جلب الزيارات الحالية للطبيب
     Route::get('/doctor/home-visits', [DoctorHomeVisitController::class, 'getMyHomeVisits']);
-
     // بدء التوجه للمريض
     Route::put('/doctor/home-visits/{HomeVisite}/start', [DoctorHomeVisitController::class, 'startVisit']);
-
     // سجل الزيارات المنتهية
     Route::get('/doctor/home-visits/history', [DoctorHomeVisitController::class, 'getVisitHistory']);
-
+    //سجل طبي في امنزل المريض
     Route::post('/storeMedicalRecord/home-visit', [MedicalRecordController::class, 'storeHomeVisitMedicalRecord']);
+    
+    //راشيتة دواء في منزل المريض
+    Route::post('/home-visits/{homevisit_id}/prescription', [PrescriptionController::class, 'storePrescriptionHomeVisite']);
 
-        Route::post('doctor/{HomeVisite}/prescription', [PrescriptionController::class, 'storePrescriptionHomeVisite']);
+    Route::get('/home-visits/{homevisit_id}/prescription', [PrescriptionController::class, 'showPrescriptionHomeVisit']);
 
+    Route::put('/home-visits/{homevisit_id}/prescription', [PrescriptionController::class, 'updatePrescriptionHomeVisit']);
+
+    Route::delete('/home-visits/{homevisit_id}/prescription', [PrescriptionController::class, 'destroyPrescriptionHomeVisit']);
+    //تخزين الطلب المختبري في منزل المريض
+    Route::post('visits/{visit}/lab-orders', [HomeCareLabOrderController::class, 'store']);
+    // عرض تفاصيل طلب مختبر للتعديل
+    Route::get('lab-orders/{id}', [HomeCareLabOrderController::class, 'edit']);
+    // تحديث طلب مختبر
+    Route::put('lab-orders/{id}', [HomeCareLabOrderController::class, 'update']);
+    // إلغاء طلب مختبر
+    Route::delete('lab-orders/{id}', [HomeCareLabOrderController::class, 'cancel']);
 });

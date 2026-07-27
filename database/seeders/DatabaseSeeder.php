@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
         MedicalRecordSeeder::class,
         PrescriptionSeeder::class,
         LabOrderSeeder::class,
+        HomeVisitSeeder::class,
     ]);
 
     }
