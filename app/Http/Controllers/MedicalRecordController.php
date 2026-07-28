@@ -68,6 +68,60 @@ class MedicalRecordController extends Controller
         ], 201);
     }
 
+    public function storeHomeVisitMedicalRecord(StoreMedicalRecordRequest $request, $homevisit_id)
+    {
+        $user = Auth::user()->load('doctorProfile');
+
+        if (!$user->doctorProfile) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'هذا الحساب ليس مسجلاً كطبيب في النظام.'
+            ], 403);
+        }
+
+        $doctorId = $user->doctorProfile->id;
+
+        $homeVisit = HomeVisit::find($homevisit_id);
+
+        if (!$homeVisit) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'الزيارة المنزلية غير موجودة.'
+            ], 404);
+        }
+
+        // التحقق من ملكية الزيارة للطبيب
+        if ($homeVisit->doctor_id !== $doctorId) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'عذراً، هذه الزيارة غير مسجلة باسمك.'
+            ], 403);
+        }
+
+        // التحقق من عدم وجود سجل مسبق
+        if ($homeVisit->medicalRecord()->exists()) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'تم إنشاء سجل طبي لهذه الزيارة مسبقاً، لا يمكن تكرار العملية.'
+            ], 400);
+        }
+
+        $data = $request->validated();
+
+        // حقن الـ IDs الموثوقة من الباك إند مباشرة
+        $data['home_visit_id'] = $homeVisit->id;
+        $data['patient_id']    = $homeVisit->patient_id;
+        $data['doctor_id']     = $doctorId;
+
+        $record = $this->medicalRecordService->createRecord($data);
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'تم حفظ السجل الطبي للزيارة المنزلية بنجاح.',
+            'data'    => $record
+        ], 201);
+    }
+
     public function updateMedicalRecord(UpdateMedicalRecordRequest $request, $id)
     {
         $user = Auth::user()->load('doctorProfile');

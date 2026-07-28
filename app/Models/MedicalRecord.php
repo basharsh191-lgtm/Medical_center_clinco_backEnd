@@ -8,6 +8,7 @@ class MedicalRecord extends Model
 {
     protected $fillable = [
         'appointment_id',
+        'home_visit_id',
         'patient_id',
         'doctor_id',
         'diagnosis',
