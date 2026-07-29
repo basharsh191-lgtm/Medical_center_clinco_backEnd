@@ -91,12 +91,12 @@ Route::middleware(['auth:sanctum','role:reception'])->group(function () {
     Route::post('/receptionist/check-in', [ReceptionistScheduleController::class, 'checkInByPatientQR']);
 
 //home visit
-Route::get('/show-home-visits', [ReceptionHomeVisitController::class, 'getClinicHomeVisits']);
-Route::post('/approve-home-visit/{id}', [ReceptionHomeVisitController::class, 'approveAndAssignDoctor']);
-Route::post('/reject-home-visit/{id}', [ReceptionHomeVisitController::class, 'rejectVisit']);
-Route::get('/rejected-home-visitsis-doctor', [ReceptionHomeVisitController::class, 'getRejectedVisits']);
-Route::get('/home-visits/{id}', [ReceptionHomeVisitController::class, 'getSingleHomeVisit']);
-Route::get('/home-visits/{visitId}/available-doctors', [ReceptionHomeVisitController::class, 'getAvailableDoctorsForHomeVisit']);
+    Route::get('/show-home-visits', [ReceptionHomeVisitController::class, 'getClinicHomeVisits']);
+    Route::post('/approve-home-visit/{id}', [ReceptionHomeVisitController::class, 'approveAndAssignDoctor']);
+    Route::post('/reject-home-visit/{id}', [ReceptionHomeVisitController::class, 'rejectVisit']);
+    Route::get('/rejected-home-visitsis-doctor', [ReceptionHomeVisitController::class, 'getRejectedVisits']);
+    Route::get('/home-visits/{id}', [ReceptionHomeVisitController::class, 'getSingleHomeVisit']);
+    Route::get('/home-visits/{visitId}/available-doctors', [ReceptionHomeVisitController::class, 'getAvailableDoctorsForHomeVisit']);
 });
 //doctor
 Route::middleware(['auth:sanctum','role:doctor'])->group(function () {

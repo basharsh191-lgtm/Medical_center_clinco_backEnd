@@ -18,6 +18,7 @@ public function toArray(Request $request): array
         return [
             'id'              => $this->id,
             'title'           => $this->title ?? 'ملف طبي',
+            'appointment_id'  => $this->appointment_id, // <-- أضف هذا السطر
             'file_type'       => $this->file_type,
             'file_url'        => Storage::disk($this->disk ?? 'public')->url($this->file_path),
             'uploaded_date'   => $this->created_at->format('Y-m-d'),
