@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-class patient extends Model
+class Patient extends Model
 {
     protected $guarded = [];
 
