@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreHomeVisitRequest;
 use App\Http\Requests\UpdateHomeVisitRequest;
 use App\Models\HomeVisit;
-use App\Models\patient;
+use App\Models\Patient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 

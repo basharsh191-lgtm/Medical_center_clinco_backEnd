@@ -7,7 +7,7 @@ use App\Http\Requests\UpdateLabOrderRequest;
 use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\LabOrder;
-use App\Models\patient;
+use App\Models\Patient;
 use App\Services\MedicalRecordService;
 use Auth;
 use Illuminate\Support\Facades\Request;

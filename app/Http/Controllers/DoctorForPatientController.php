@@ -6,7 +6,7 @@ use App\Models\Appointment;
 use App\Models\Attachment;
 use App\Models\Doctor;
 use App\Models\LabOrder;
-use App\Models\patient;
+use App\Models\Patient;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;

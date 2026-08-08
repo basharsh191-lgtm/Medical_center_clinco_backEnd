@@ -8,7 +8,7 @@ use App\Http\Requests\PatientRequest;
 use App\Http\Requests\PatientUpdateRequest;
 use App\Models\Appointment;
 use App\Models\Doctor;
-use App\Models\patient;
+use App\Models\Patient;
 use App\Services\AppointmentService;
 use App\Services\PatientService;
 use App\UploadFileTrait;

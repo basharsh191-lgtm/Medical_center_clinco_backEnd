@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Models\Appointment;
-use App\Models\patient;
+use App\Models\Patient;
 use Illuminate\Support\Facades\Auth;
 
 class PatientService{
