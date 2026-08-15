@@ -126,7 +126,7 @@ class DoctorForPatientController extends Controller
         'message' => 'تم جلب ملف المريض الشامل بنجاح باستخدام المعرف (ID).',
         'data'    => $data
     ], 200);
-}
+    }
     public function getPatientAnalyses($patient_id)
     {
         $patient = Patient::findOrFail($patient_id);
@@ -475,6 +475,29 @@ class DoctorForPatientController extends Controller
             'message' => 'تم جلب ملف المريض الشامل بنجاح باستخدام رمز الـ QR.',
             'data'    => $data
         ], 200);
+    }
+    public function getProfile()
+{
+    $user = Auth::user();
+    $doctorProfile = $user->doctorProfile;
+
+    if (!$doctorProfile) {
+        return response()->json([
+            'status'  => false,
+            'message' => 'لم يتم العثور على ملف شخصي لهذا الطبيب.'
+        ], 404);
+    }
+    $doctorProfile->load([
+        'user:id,name,last_name,email,phone',
+        'speciality:id,specialization_name',
+        'clinic:id,clinic_name,open_time,close_time'
+    ]);
+
+    return response()->json([
+        'status'  => true,
+        'message' => 'تم جلب الملف الشخصي للطبيب بنجاح.',
+        'data'    => $doctorProfile
+    ], 200);
     }
 
 }

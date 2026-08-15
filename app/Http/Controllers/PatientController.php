@@ -4,15 +4,20 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\AppointmentPatientRequest;
 use App\Http\Requests\AppointmentUpdateRequest;
+use App\Http\Requests\CreatePatientRequest;
 use App\Http\Requests\PatientRequest;
 use App\Http\Requests\PatientUpdateRequest;
+use App\Mail\ReceptionEmail;
 use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Patient;
+use App\Models\User;
 use App\Services\AppointmentService;
 use App\Services\PatientService;
 use App\UploadFileTrait;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class PatientController extends Controller
@@ -197,7 +202,51 @@ public function showAppointment(Appointment $appointment)
             'message' => 'تم جلب تفاصيل الموعد بنجاح.',
             'data'    => $appointment
         ], 200);
-    }
+}
+public function storeAccountByReception(CreatePatientRequest $request)
+    {
+        $validated = $request->validated();
+
+        $patient = DB::transaction(function () use ($validated) {
+            // 1. إنشاء حساب المستخدم (Password يُشفّر تلقائياً عبر $casts في موديل User)
+            $user = User::create([
+                'name'        => $validated['name'],
+                'last_name'   => $validated['last_name'],
+                'email'       => $validated['email'],
+                'phone'       => $validated['phone'],
+                'password'    => $validated['password'],
+                'is_verified' => true,
+            ]);
+
+            // إسناد Spatie Role
+            $user->assignRole('patient');
+            Mail::to($validated['email'])->send(new ReceptionEmail($validated['email'],$validated['password']));
+
+            // 2. إنشاء ملف المريض (الـ qr_token يُولّد تلقائياً عبر boot Method)
+            $patient = $user->patient()->create([
+                'gender'           => $validated['gender'],
+                'address'          => $validated['address'],
+                'birth_date'       => $validated['birth_date'],
+                'allergies'        => $validated['allergies'] ?? null,
+                'hereditary'       => $validated['hereditary'] ?? null,
+                'chronic_diseases' => $validated['chronic_diseases'] ?? null,
+                'blood_type'       => $validated['blood_type'] ?? null,
+                'taller'           => $validated['taller'] ?? null,
+                'weight'           => $validated['weight'] ?? null,
+            ]);
+
+            return $patient;
+        });
+
+        // تحضير الرد مع تحميل بيانات الـ User
+        $patient->load('user:id,name,last_name,email,phone');
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'تم إنشاء ملف المريض بنجاح.',
+            'data'    => $patient,
+        ], 201);
+}
 }
 
 

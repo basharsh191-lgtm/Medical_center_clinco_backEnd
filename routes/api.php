@@ -89,7 +89,16 @@ Route::middleware(['auth:sanctum','role:reception'])->group(function () {
     Route::get('get/doctors/reception',[ReceptionistScheduleController::class,'getMyClinicDoctors']);
     //تحويل حالة الموعد من  scheduled الىarrived
     Route::post('/receptionist/check-in', [ReceptionistScheduleController::class, 'checkInByPatientQR']);
-
+    //جلب كل المواعيد الحالية للعيادة التي يشتغل بها الريسبشن
+    Route::get('reception/appointments', [ReceptionistScheduleController::class, 'getClinicAppointments']);
+    //نقل المواعيد لغير يوم
+    Route::post('reception/shiftAppointments', [ReceptionistScheduleController::class, 'shiftAppointments']);
+    //تحديث حالة الموعد no_show 
+    Route::put('reception/appointments/{appointment}/no-show', [ReceptionistScheduleController::class, 'updateStatusNoShow']);
+    //اضافة حساب مريض جديد 
+    Route::post('reception/patients/new', [PatientController::class, 'storeAccountByReception']);
+    //اضافة موعد walk-in
+    Route::post('appointments/walk-in', [AppointmentController::class, 'storeWalkIn']);
 //home visit
     Route::get('/show-home-visits', [ReceptionHomeVisitController::class, 'getClinicHomeVisits']);
     Route::post('/approve-home-visit/{id}', [ReceptionHomeVisitController::class, 'approveAndAssignDoctor']);
@@ -127,6 +136,7 @@ Route::middleware(['auth:sanctum','role:doctor'])->group(function () {
     Route::get('/patients/{qr_token}/profile', [DoctorForPatientController::class, 'getPatientFullProfile']);
     Route::get('/doctor/{patient}/medical-profile', [DoctorForPatientController::class, 'getPatientFullProfileById']);
     Route::put('/appointments/{appointment}/vital-signs', [MedicalRecordController::class, 'storeVitalSigns']);
+    Route::get('doctor/profile', [DoctorForPatientController::class, 'getProfile']);
     //visit home
     // جلب الزيارات الحالية للطبيب
     Route::get('/doctor/home-visits', [DoctorHomeVisitController::class, 'getMyHomeVisits']);
@@ -182,3 +192,4 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/notifications', [NotificationController::class, 'getNotifications']);
     Route::get('/notifications/{id}', [NotificationController::class, 'showNotification']);
 });
+
