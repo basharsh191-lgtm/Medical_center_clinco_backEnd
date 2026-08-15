@@ -12,10 +12,8 @@ use App\Models\Patient;
 use App\Services\AppointmentService;
 use App\Services\PatientService;
 use App\UploadFileTrait;
-
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Str;
+use Illuminate\Support\Str;
 
 class PatientController extends Controller
 {

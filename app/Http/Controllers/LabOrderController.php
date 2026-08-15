@@ -9,9 +9,7 @@ use App\Models\Doctor;
 use App\Models\LabOrder;
 use App\Models\Patient;
 use App\Services\MedicalRecordService;
-use Auth;
-use Illuminate\Support\Facades\Request;
-
+use Illuminate\Support\Facades\Auth;
 class LabOrderController extends Controller
 {
 
