@@ -21,6 +21,8 @@ return new class extends Migration
         $table->time('end_time');
         $table->enum('status', ['scheduled', 'arrived', 'completed', 'cancelled','no_show'])->default('scheduled');
         $table->text('notes')->nullable();
+        $table->boolean('reminder_24h_sent')->default(false);
+        $table->boolean('reminder_1h_sent')->default(false);
         $table->timestamps();
     });
   }
