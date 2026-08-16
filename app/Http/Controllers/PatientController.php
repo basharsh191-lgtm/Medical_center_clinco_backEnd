@@ -9,9 +9,12 @@ use App\Http\Requests\PatientUpdateRequest;
 use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Patient;
+use App\Models\User;
 use App\Services\AppointmentService;
+use App\Services\NotificationService;
 use App\Services\PatientService;
 use App\UploadFileTrait;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
@@ -86,23 +89,100 @@ public function appointmentStore(AppointmentPatientRequest $request)
 }
 public function appointmentUpdate(AppointmentUpdateRequest $request, Appointment $appointment)
 {
+    // نحتفظ بالقيم القديمة قبل التحديث (الـ service بيعدل نفس الـ object في الذاكرة)
+    $oldDate = $appointment->appointment_date;
+    $oldStartTime = $appointment->start_time;
+
     $result = $this->AppointmentService->updateAppointment($appointment, $request->validated());
 
     if (!$result['success']) {
-        return response()->json(['success' => false, 'message' => $result['message']], 422);
+        return response()->json([
+            'success' => false,
+            'message' => $result['message']
+        ], 422);
+    }
+
+    $updatedAppointment = $result['data'];
+
+    $isTimeChanged = ($oldDate != $updatedAppointment->appointment_date) ||
+                     ($oldStartTime != $updatedAppointment->start_time);
+
+    if ($isTimeChanged) {
+        $this->notifyDoctorAndReception(
+            $updatedAppointment,
+            $request->user(),
+            'تعديل موعد كشف',
+            'تغيير موعد في العيادة',
+            "قام المريض {$request->user()->name} بتغيير موعده إلى {$updatedAppointment->appointment_date}",
+            "تم تعديل موعد المريض {$request->user()->name}"
+        );
     }
 
     return response()->json([
         'success' => true,
         'message' => 'تم تحديث الموعد بنجاح.',
-        'data'    => $result['data']
+        'data'    => $updatedAppointment
     ], 200);
 }
-public function appointmentCancel(Appointment $appointment)
+
+public function appointmentCancel(Request $request, Appointment $appointment)
 {
     $result = $this->AppointmentService->cancelAppointment($appointment);
 
+    if ($result['status_code'] === 200) {
+        $this->notifyDoctorAndReception(
+            $result['response']['data'],
+            $request->user(),
+            'إلغاء موعد كشف',
+            'إلغاء موعد في العيادة',
+            "قام المريض {$request->user()->name} بإلغاء موعده",
+            "قام المريض {$request->user()->name} بإلغاء موعده"
+        );
+    }
+
     return response()->json($result['response'], $result['status_code']);
+}
+
+/**
+ * إرسال إشعار للطبيب (عبر user_id تبعه) ولموظفي استقبال العيادة
+ */
+private function notifyDoctorAndReception(
+    Appointment $appointment,
+    $currentUser,
+    string $doctorTitle,
+    string $receptionTitle,
+    string $doctorBody,
+    string $receptionBody
+) {
+    // 1. إشعار الطبيب — لازم نجيب user_id تبعه، مش doctor_id مباشرة
+    $doctorUserId = $appointment->doctor?->user_id;
+
+    if ($doctorUserId) {
+        NotificationService::sendToUser(
+            $doctorUserId,
+            $doctorTitle,
+            $doctorBody,
+            ['appointment_id' => $appointment->id]
+        );
+    }
+
+    // 2. إشعار موظفي استقبال العيادة
+    $clinicId = $appointment->clinic_id;
+
+    if ($clinicId) {
+        $receptionistUserIds = User::whereHas('reception', function ($query) use ($clinicId) {
+            $query->where('clinic_id', $clinicId);
+        })->pluck('id');
+
+        foreach ($receptionistUserIds as $userId) {
+            NotificationService::sendToUser(
+                $userId,
+                $receptionTitle,
+                $receptionBody,
+                ['appointment_id' => $appointment->id]
+            );
+        }
+    }
 }
 public function patientAppointments(){
         $result = $this->PatientService->getAllAppointments();
