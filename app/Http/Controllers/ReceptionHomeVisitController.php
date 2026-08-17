@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Doctor;
 use App\Models\HomeVisit;
+use App\Services\FcmService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -36,49 +37,142 @@ class ReceptionHomeVisitController extends Controller
     }
 
     // قبول الطلب وتعيين/إعادة تعيين الطبيب
-    public function approveAndAssignDoctor(Request $request, $id)
-    {
-        $clinicId = Auth::user()->reception->clinic_id;
+public function approveAndAssignDoctor(Request $request, $id, FcmService $fcmService)
+{
+    $clinicId = Auth::user()->reception?->clinic_id;
 
-        $request->validate([
-            'doctor_id' => 'required|exists:doctors,id',
-        ]);
-
-        $visit = HomeVisit::where('clinic_id', $clinicId)->findOrFail($id);
-
-        $visit->update([
-            'doctor_id'        => $request->doctor_id,
-            'status'           => 'assigned',
-            'rejection_reason' => null // إعادة تعيين سبب الرفض القديم إن وجد
-        ]);
-
+    if (!$clinicId) {
         return response()->json([
-            'success' => true,
-            'message' => 'تم تعيين الطبيب لطلب الرعاية المنزلية بنجاح'
-        ], 200);
+            'success' => false,
+            'message' => 'الحساب الحالي غير مرتبط بعيادة كموظف استقبال.'
+        ], 403);
     }
+
+    $request->validate([
+        'doctor_id' => 'required|exists:doctors,id',
+    ]);
+
+    $visit = HomeVisit::where('clinic_id', $clinicId)->findOrFail($id);
+
+    $visit->update([
+        'doctor_id'        => $request->doctor_id,
+        'status'           => 'assigned',
+        'rejection_reason' => null
+    ]);
+
+    // إرسال الإشعارات للمريض وللطبيب
+    $this->sendAssignNotifications($visit, $fcmService);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'تم تعيين الطبيب لطلب الرعاية المنزلية بنجاح'
+    ], 200);
+}
+
+/**
+ * دالة مساعدة لإرسال الإشعارات للمريض وللطبيب المُعيَّن
+ */
+private function sendAssignNotifications(HomeVisit $visit, FcmService $fcmService)
+{
+    // تحميل العلاقات المطلوبة (المريض مع أسلوب حسابه، والطبيب مع أسلوب حسابه)
+    $visit->load([
+        'patient.user',
+        'doctor.user'
+    ]);
+
+    // 1. إرسال إشعار للمريض
+    $patientUser = $visit->patient?->user;
+    if ($patientUser) {
+        $doctorUser = $visit->doctor?->user;
+        $doctorName = trim("{$doctorUser?->name} {$doctorUser?->last_name}") ?: 'الطبيب';
+
+        $title = 'تم قبول طلب الرعاية المنزلية 🩺';
+        $body  = "تمت الموافقة على طلبك وتعيين د. {$doctorName} لمتابعة زيارتك المنزلية.";
+
+        $data  = [
+            'click_action'  => 'FLUTTER_NOTIFICATION_CLICK',
+            'action'        => 'OPEN_HOME_VISIT_DETAILS',
+            'home_visit_id' => (string) $visit->id,
+        ];
+
+        $fcmService->sendToUser($patientUser->id, $title, $body, $data);
+    }
+
+    // 2. إرسال إشعار للطبيب المُعيَّن
+    $doctorUser = $visit->doctor?->user;
+    if ($doctorUser) {
+        $patientUser = $visit->patient?->user;
+        $patientName = trim("{$patientUser?->name} {$patientUser?->last_name}") ?: 'مريض';
+
+        $title = 'زيارة منزلية جديدة 🏠';
+        $body  = "تم تعيينك لمتابعة طلب زيارة منزلية جديد للمريض {$patientName}.";
+
+        $data  = [
+            'click_action'  => 'FLUTTER_NOTIFICATION_CLICK',
+            'action'        => 'OPEN_DOCTOR_HOME_VISIT_DETAILS',
+            'home_visit_id' => (string) $visit->id,
+        ];
+
+        $fcmService->sendToUser($doctorUser->id, $title, $body, $data);
+    }
+}
 
     // رفض الطلب نهائياً من قبل الاستقبال
-    public function rejectVisit(Request $request, $id)
-    {
-        $clinicId = Auth::user()->reception->clinic_id;
+public function rejectVisit(Request $request, $id, FcmService $fcmService)
+{
+    $clinicId = Auth::user()->reception?->clinic_id;
 
-        $request->validate([
-            'rejection_reason' => 'required|string|max:255',
-        ]);
-
-        $visit = HomeVisit::where('clinic_id', $clinicId)->findOrFail($id);
-
-        $visit->update([
-            'status'           => 'cancelled',
-            'rejection_reason' => $request->rejection_reason
-        ]);
-
+    if (!$clinicId) {
         return response()->json([
-            'success' => true,
-            'message' => 'تم إلغاء الطلب بنجاح وتوثيق السبب'
-        ], 200);
+            'success' => false,
+            'message' => 'الحساب الحالي غير مرتبط بعيادة كموظف استقبال.'
+        ], 403);
     }
+
+    $request->validate([
+        'rejection_reason' => 'required|string|max:255',
+    ]);
+
+    $visit = HomeVisit::where('clinic_id', $clinicId)->findOrFail($id);
+
+    $visit->update([
+        'status'           => 'cancelled',
+        'rejection_reason' => $request->rejection_reason
+    ]);
+
+    // إرسال إشعار الرفض للمريض
+    $this->sendRejectionNotificationToPatient($visit, $fcmService);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'تم إلغاء الطلب بنجاح وتوثيق السبب'
+    ], 200);
+}
+
+/**
+ * دالة مساعدة لإرسال إشعار الرفض للمريض مع السبب
+ */
+private function sendRejectionNotificationToPatient(HomeVisit $visit, FcmService $fcmService)
+{
+    // تحميل علاقة المريض مع حسابه
+    $visit->load('patient.user');
+
+    $patientUser = $visit->patient?->user;
+
+    if ($patientUser) {
+        $title = 'اعتذار عن طلب الزيارة المنزلية ❌';
+        $body  = "نعتذر منك، تعذر قبول طلب الزيارة المنزلية. السبب: {$visit->rejection_reason}";
+
+        $data  = [
+            'click_action'     => 'FLUTTER_NOTIFICATION_CLICK',
+            'action'           => 'OPEN_HOME_VISIT_DETAILS',
+            'home_visit_id'    => (string) $visit->id,
+            'rejection_reason' => (string) $visit->rejection_reason,
+        ];
+
+        $fcmService->sendToUser($patientUser->id, $title, $body, $data);
+    }
+} 
     // في ReceptionHomeVisitController
     public function getRejectedVisits()
     {
