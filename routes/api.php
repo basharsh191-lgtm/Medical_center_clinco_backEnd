@@ -4,6 +4,7 @@ use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\ReceptionistScheduleController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ClincController;
 use App\Http\Controllers\DoctorForPatientController;
 use App\Http\Controllers\DoctorHomeVisitController;
@@ -93,9 +94,9 @@ Route::middleware(['auth:sanctum','role:reception'])->group(function () {
     Route::get('reception/appointments', [ReceptionistScheduleController::class, 'getClinicAppointments']);
     //نقل المواعيد لغير يوم
     Route::post('reception/shiftAppointments', [ReceptionistScheduleController::class, 'shiftAppointments']);
-    //تحديث حالة الموعد no_show 
+    //تحديث حالة الموعد no_show
     Route::put('reception/appointments/{appointment}/no-show', [ReceptionistScheduleController::class, 'updateStatusNoShow']);
-    //اضافة حساب مريض جديد 
+    //اضافة حساب مريض جديد
     Route::post('reception/patients/new', [PatientController::class, 'storeAccountByReception']);
     //اضافة موعد walk-in
     Route::post('appointments/walk-in', [AppointmentController::class, 'storeWalkIn']);
@@ -193,3 +194,5 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/notifications/{id}', [NotificationController::class, 'showNotification']);
 });
 
+
+Route::post('/chat/{conversationId}/message', [ChatController::class, 'sendMessage']);
