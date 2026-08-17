@@ -80,6 +80,7 @@ Route::middleware(['auth:sanctum','role:super_admin'])->group(function () {
     //اضافة ريسبشن
     Route::post('/add/resiption/admin', [StaffController::class, 'storeReception']);
     //اضافة ممرض مستقبلا
+    Route::post('/test-fcm', [StaffController::class, 'testFcmNotification']);
 });
 
 //reception
