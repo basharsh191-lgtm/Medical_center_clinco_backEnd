@@ -54,7 +54,7 @@ public function storeDoctor(DoctorRequest $request,FcmService $fcmService)
         'action' => 'OPEN_DOCTOR_PROFILE',
         'doctor_id' => (string) $doctor->id,
     ];
-    User::whereHas('deviceTokens')->select('id')->chunk(100, function ($users) use ($fcmService, $title, $body, $data) {
+    User::whereHas('DeviceTokens')->select('id')->chunk(100, function ($users) use ($fcmService, $title, $body, $data) {
         foreach ($users as $user) {
             $fcmService->sendToUser($user->id, $title, $body, $data);
         }

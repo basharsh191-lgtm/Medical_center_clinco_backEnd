@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DeviceTokens;
 use App\Models\Notification;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -62,7 +63,6 @@ class NotificationController extends Controller
             'data' => $notification
         ]);
     }
-
     // وضع علامة مقروء لكل الإشعارات
     public function markAllAsRead()
     {
@@ -77,15 +77,35 @@ class NotificationController extends Controller
     }
     public function getNotifications(Request $request)
     {
-        // جلب الإشعارات الخاصة بالمستخدم وترتيبها من الأحدث للأقدم
-        $notifications = Notification::where('user_id', $request->user()->id)
-            ->latest()
-            ->paginate(15);
+        $query = Notification::where('user_id', $request->user()->id);
+
+        if ($request->filled('date')) {
+            $query->whereDate('created_at', $request->date);
+        }
+
+        if ($request->has(['from', 'to'])) {
+            $query->whereBetween('created_at', [$request->from, $request->to]);
+        }
+
+        $notifications = $query->orderBy('created_at', 'desc')
+            ->paginate($request->get('per_page', 15));
+
+        // تعديل العناصر لإضافة last_name ديناميكياً
+        $notifications->through(function ($notification) {
+            $data = $notification->data;
+
+            // إذا كان المريض مرتبئ بصلة مع نموذج الإشعار أو من جدول المستخدمين
+        $patient = User::find($data['patient_id'] ?? null);
+        $data['last_name'] = $patient ? $patient->last_name : null;
+
+            $notification->data = $data;
+            return $notification;
+        });
 
         return response()->json([
             'status' => 'success',
-            'data' => $notifications
-        ]);
+            'data'   => $notifications
+        ], 200);
     }
     public function showNotification($id)
 {
@@ -107,6 +127,6 @@ class NotificationController extends Controller
         'status' => 'success',
         'data' => $notification
     ]);
-}
+    }
 
 }

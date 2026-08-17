@@ -34,5 +34,8 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    'fcm' => [
+    'server_key' => env('FCM_SERVER_KEY'),
+],
 
 ];
