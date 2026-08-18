@@ -99,9 +99,23 @@ class AppointmentService
 
         return false;
     }
+    /**
+     * هل يعود هذا الموعد للمريض صاحب الحساب الحالي؟
+     *
+     * appointments.patient_id يشير إلى patients.id وليس users.id،
+     * فمقارنته بـ Auth::id() تمنع المالك الشرعي وقد تسمح لغيره.
+     */
+    private function ownsAppointment(Appointment $appointment): bool
+    {
+        $patientId = Auth::user()?->patient?->id;
+
+        return $patientId !== null
+            && (int) $appointment->patient_id === (int) $patientId;
+    }
+
     public function updateAppointment(Appointment $appointment, array $data)
     {
-        if ($appointment->patient_id !== Auth::id()) {
+        if (! $this->ownsAppointment($appointment)) {
             return [
                 'success' => false,
                 'message' => 'غير مصرح لك بتعديل هذا الموعد، هذا الموعد لا يخص حسابك.'
@@ -134,7 +148,7 @@ class AppointmentService
     }
     public function cancelAppointment(Appointment $appointment): array
     {
-        if ($appointment->patient_id !== Auth::id()) {
+        if (! $this->ownsAppointment($appointment)) {
             return [
                 'status_code' => 403,
                 'response' => [

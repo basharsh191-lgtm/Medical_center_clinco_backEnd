@@ -53,7 +53,18 @@ class AppointmentPatientRequest extends FormRequest
     public function validated($key = null, $default = null)
     {
         $validated = parent::validated($key, $default);
-        $validated['patient_id'] = Auth::id(); // حقن الـ ID هنا بأمان
+
+        // appointments.patient_id مفتاح أجنبي إلى patients.id وليس users.id
+        // لذلك Auth::id() خطأ هنا — يجب المرور عبر سجل المريض
+        $patientId = Auth::user()?->patient?->id;
+
+        abort_if(!$patientId, response()->json([
+            'success' => false,
+            'message' => 'هذا الحساب غير معرف كمريض في النظام.',
+        ], 403));
+
+        $validated['patient_id'] = $patientId;
+
         return $validated;
     }
 }
