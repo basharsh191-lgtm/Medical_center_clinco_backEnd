@@ -4,6 +4,7 @@ use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\ReceptionistScheduleController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ChatAiGeminiController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ClincController;
 use App\Http\Controllers\DoctorForPatientController;
@@ -56,6 +57,10 @@ Route::middleware(['auth:sanctum','role:patient'])->group(function () {
     Route::put('/update-home-visit/{id}', [HomeVisitController::class, 'updateHomeVisit']);
     Route::delete('/cancel-home-visit/{id}', [HomeVisitController::class, 'cancelHomeVisit']);
 
+
+    //chat
+    Route::post('/ask_ai', [ChatAiGeminiController::class, 'ask']);
+    Route::get('/chat-history',[ChatAiGeminiController::class,'getChatHistory']);
 });
 
     //عرض تقييمات الأطباء
@@ -197,3 +202,4 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 
 Route::post('/chat/{conversationId}/message', [ChatController::class, 'sendMessage']);
+
