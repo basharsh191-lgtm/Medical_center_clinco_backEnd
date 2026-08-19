@@ -6,6 +6,7 @@ use App\Http\Controllers\ReceptionistScheduleController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ClincController;
+use App\Http\Controllers\ConversationsController;
 use App\Http\Controllers\DoctorForPatientController;
 use App\Http\Controllers\DoctorHomeVisitController;
 use App\Http\Controllers\HomeCareLabOrderController;
@@ -196,4 +197,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
 });
 
 
-Route::post('/chat/{conversationId}/message', [ChatController::class, 'sendMessage']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/conversations', [ConversationsController::class, 'index']);      // جلب قائمة المحادثات
+    Route::post('/conversations', [ConversationsController::class, 'store']);     // بدء/فتح محادثة مع شخص
+    Route::get('/conversations/{id}', [ConversationsController::class, 'show']);  // جلب رسائل محادثة معينة
+    Route::post('/chat/{conversationId}/message', [ChatController::class, 'sendMessage']);
+
+});

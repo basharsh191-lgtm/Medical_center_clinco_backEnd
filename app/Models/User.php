@@ -74,4 +74,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(Notification::class);
     }
+    public function conversations()
+    {
+        return $this->belongsToMany(Conversation::class)->withTimestamps();
+    }
+    public function messages()
+    {
+        return $this->hasMany(Message::class);
+    }
 }

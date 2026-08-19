@@ -15,30 +15,25 @@ class MessageSent implements ShouldBroadcast
 
     public $message;
     public $conversationId;
+
     public function __construct($message, $conversationId)
     {
         $this->message = $message;
         $this->conversationId = $conversationId;
     }
 
+    /**
+     * تحديد القناة الخاصة بالمحادثة
+     */
     public function broadcastOn(): array
     {
-        // هذه القناة الخاصة التي ينتظرها تطبيق Flutter
-        // 'private-conversation.$conversationId'
         return [
-            new PrivateChannel('conversation.' . $this->conversationId),
+            new PrivateChannel('chat.' . $this->conversationId),
         ];
     }
 
     public function broadcastAs(): string
     {
         return 'message.sent';
-    }
-
-    public function broadcastWith(): array
-    {
-        return [
-            'message' => $this->message,
-        ];
     }
 }
