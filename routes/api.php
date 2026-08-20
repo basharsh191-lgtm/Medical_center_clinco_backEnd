@@ -20,6 +20,7 @@ use App\Http\Controllers\PrescriptionController;
 use App\Http\Controllers\RatingController;
 use App\Http\Controllers\ReceptionHomeVisitController;
 use App\Http\Controllers\StaffController;
+use App\Http\Controllers\SuperAdminController;
 use Illuminate\Support\Facades\Route;
 
 //Auth
@@ -85,8 +86,18 @@ Route::middleware(['auth:sanctum','role:super_admin'])->group(function () {
     Route::post('/add/doctor/admin', [StaffController::class, 'storeDoctor']);
     //اضافة ريسبشن
     Route::post('/add/resiption/admin', [StaffController::class, 'storeReception']);
-    //اضافة ممرض مستقبلا
-    Route::post('/test-fcm', [StaffController::class, 'testFcmNotification']);
+    //حذف اليوزرات
+    Route::delete('/users/{id}/force-delete', [SuperAdminController::class, 'forceDelete']);
+    //جلب كل المرضى
+    Route::get('/patients', [SuperAdminController::class, 'getPatients']);
+    //جلب كل الدكاترة
+    Route::get('/doctors', [SuperAdminController::class, 'getDoctors']);
+    //جلب كل الريسبشن
+    Route::get('/receptionists', [SuperAdminController::class, 'getReceptionists']);
+    //جلب كل المواعيد الخاصة بالعيادة
+    Route::get('/clinics/{clinic}/appointments', [SuperAdminController::class, 'getClinicAppointments']);
+    //جلب كل طلبات الرعاية المنزلية
+    Route::get('/home-visits', [SuperAdminController::class, 'getHomeVisits']);
 });
 
 //reception
