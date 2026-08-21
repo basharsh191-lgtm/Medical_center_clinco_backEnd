@@ -42,4 +42,25 @@ return Application::configure(basePath: dirname(__DIR__))
                 ], 429);
             }
         });
+
+    // الخدمات ترمي new Exception('رسالة', 404) — والرقم الثاني هو code الاستثناء
+    // وليس حالة HTTP، ولارافيل لا يحوّل \Exception عادية إلى استجابة، فكان الردّ
+    // 500 "Server Error" وتضيع الرسالة العربية. هذا المعالج يستعيد الحالة الصحيحة.
+    //
+    // يُسجَّل أخيراً عمداً: لارافيل ينفّذ المعالجات بترتيب التسجيل ويأخذ أول ردّ
+    // غير فارغ، فتبقى الأولوية للمعالجات المخصّصة أعلاه.
+    // القيد على 4xx مقصود: أخطاء الخادم تبقى 500 مبهمة حتى لا تتسرب تفاصيل داخلية،
+    // وQueryException لا يُلتقط لأن رمزه نصّي (SQLSTATE) لا عدد صحيح.
+    $exceptions->render(function (\Exception $e, Request $request) {
+        $code = $e->getCode();
+
+        if (! $request->is('api/*') || ! is_int($code) || $code < 400 || $code > 499) {
+            return null;
+        }
+
+        return response()->json([
+            'status'  => 'error',
+            'message' => $e->getMessage(),
+        ], $code);
+    });
     })->create();

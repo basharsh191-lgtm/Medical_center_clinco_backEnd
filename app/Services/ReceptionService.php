@@ -36,6 +36,25 @@ class ReceptionService
 
         // 3. التحقق من وجود الموعد
         if (!$appointment) {
+            // الموعد قد يكون موجوداً اليوم لكن بحالة أخرى (arrived/completed/cancelled).
+            // بدون التمييز تظهر رسالة "لا يوجد موعد" فيظن موظف الاستقبال أن الحجز مفقود،
+            // بينما السبب الشائع هو أن الوصول سُجّل مسبقاً.
+            $todayAppointment = Appointment::where('patient_id', $patient->id)
+                ->where('clinic_id', $clinicId)
+                ->whereDate('appointment_date', Carbon::today())
+                ->first();
+
+            if ($todayAppointment && $todayAppointment->status === 'arrived') {
+                throw new Exception('تم تسجيل وصول هذا المريض مسبقاً.', 409);
+            }
+
+            if ($todayAppointment) {
+                throw new Exception(
+                    "لا يمكن تسجيل الوصول، حالة موعد اليوم لهذا المريض هي ({$todayAppointment->status}).",
+                    409
+                );
+            }
+
             throw new Exception('لا يوجد موعد مجدول لهذا المريض اليوم في هذه العيادة.', 404);
         }
 

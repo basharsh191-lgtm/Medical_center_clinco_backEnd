@@ -284,7 +284,6 @@ public function createOrder(array $data)
             $testsData = array_map(function ($testName) {
                 return [
                     'test_name' => $testName,
-                    'status'    => 'pending',
                 ];
             }, $data['tests']);
 
