@@ -69,7 +69,8 @@ public function login(LoginRequest $request)
         $token=$user->createToken('auth_Token')->plainTextToken;
         return response()->json(
             ['massage'=>'User log in Succssfully ',
-                    'Token'=>$token
+                    'Token'=>$token,
+                    'user_id'=>$user->id,
                     ], 201);
 }
 public function doctorLogin(Request $request)

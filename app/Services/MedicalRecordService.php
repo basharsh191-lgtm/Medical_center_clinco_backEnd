@@ -252,52 +252,49 @@ class MedicalRecordService
     // 4. طلبات التحاليل (Lab Orders) - عيادة وزيارات
     // ==========================================
 
-    public function createOrder(array $data)
-    {
-        $user = Auth::user();
+public function createOrder(array $data)
+{
+    $user = Auth::user();
 
-        $doctor = Doctor::where('user_id', $user->id)->first();
-        if (!$doctor) {
-            throw ValidationException::withMessages([
-                'doctor' => 'الحساب الحالي غير مسجل كطبيب.',
-            ]);
-        }
-
-        $appointmentExists = Appointment::where('id', $data['appointment_id'])
-                                         ->where('doctor_id', $doctor->id)
-                                         ->exists();
-
-        if (!$appointmentExists) {
-            throw ValidationException::withMessages([
-                'appointment_id' => 'لا يمكنك طلب تحليل لمريض غير مسجل في مواعيدك الشخصية.',
-            ]);
-        }
-
-        return DB::transaction(function () use ($data) {
-            $labOrder = LabOrder::create([
-                'appointment_id' => $data['appointment_id'],
-                'doctor_notes'   => $data['doctor_notes'] ?? null,
-                'overall_status' => 'pending',
-            ]);
-
-            $testsData = [];
-            $now = now();
-
-            foreach ($data['tests'] as $testName) {
-                $testsData[] = [
-                    'lab_order_id' => $labOrder->id,
-                    'test_name'    => $testName,
-                    'status'       => 'pending',
-                    'created_at'   => $now,
-                    'updated_at'   => $now,
-                ];
-            }
-
-            LabOrderTest::insert($testsData);
-
-            return $labOrder->load('tests');
-        });
+    $doctor = Doctor::where('user_id', $user->id)->first();
+    if (!$doctor) {
+        throw ValidationException::withMessages([
+            'doctor' => 'الحساب الحالي غير مسجل كطبيب.',
+        ]);
     }
+
+    $appointmentExists = Appointment::where('id', $data['appointment_id'])
+                                     ->where('doctor_id', $doctor->id)
+                                     ->exists();
+
+    if (!$appointmentExists) {
+        throw ValidationException::withMessages([
+            'appointment_id' => 'لا يمكنك طلب تحليل لمريض غير مسجل في مواعيدك الشخصية.',
+        ]);
+    }
+
+    return DB::transaction(function () use ($data) {
+        $labOrder = LabOrder::create([
+            'appointment_id' => $data['appointment_id'],
+            'doctor_notes'   => $data['doctor_notes'] ?? null,
+            'overall_status' => 'pending',
+        ]);
+
+        if (!empty($data['tests'])) {
+            $testsData = array_map(function ($testName) {
+                return [
+                    'test_name' => $testName,
+                    'status'    => 'pending',
+                ];
+            }, $data['tests']);
+
+            // استخدام createMany يضمن المرور عبر Eloquent وحل مشاكل Strict Mode
+            $labOrder->tests()->createMany($testsData);
+        }
+
+        return $labOrder->load('tests');
+    });
+}
 
     public function createHomeOrder(array $data)
     {
