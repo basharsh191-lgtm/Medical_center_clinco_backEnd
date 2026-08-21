@@ -51,6 +51,17 @@ return Application::configure(basePath: dirname(__DIR__))
     // غير فارغ، فتبقى الأولوية للمعالجات المخصّصة أعلاه.
     // القيد على 4xx مقصود: أخطاء الخادم تبقى 500 مبهمة حتى لا تتسرب تفاصيل داخلية،
     // وQueryException لا يُلتقط لأن رمزه نصّي (SQLSTATE) لا عدد صحيح.
+    // رفضٌ منطقي متوقّع (مسح QR مرتين، موعد غير موجود...) ليس عطلاً في الخادم،
+    // فلا يُسجَّل بمستوى ERROR وإلا امتلأ السجل بأحداث طبيعية وضاعت الأعطال الحقيقية.
+    // نفس شرط المعالج أدناه تماماً حتى لا يفترقا.
+    $exceptions->reportable(function (\Exception $e) {
+        $code = $e->getCode();
+
+        if (is_int($code) && $code >= 400 && $code <= 499) {
+            return false;
+        }
+    });
+
     $exceptions->render(function (\Exception $e, Request $request) {
         $code = $e->getCode();
 
