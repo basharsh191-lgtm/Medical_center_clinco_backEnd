@@ -13,14 +13,13 @@ use Illuminate\Support\Facades\Auth;
 class RatingController extends Controller
 {
 
-protected $ratingService;
+    protected $ratingService;
 
     public function __construct(RatingService $ratingService)
     {
         $this->ratingService = $ratingService;
     }
-
-public function storeRating(StoreRatingRequest $request, $doctorId)
+    public function storeRating(StoreRatingRequest $request, $doctorId)
     {
         try {
             $rating = $this->ratingService->store(
@@ -35,7 +34,6 @@ public function storeRating(StoreRatingRequest $request, $doctorId)
                 'message' => 'تم تسجيل تقييمك بنجاح.',
                 'data'    => $rating
             ], 201);
-
         } catch (\Exception $e) {
             // التحقق من كود الخطأ ليكون رقم HTTP صالح (أو استخدام 400 كافتراضي)
             $statusCode = $e->getCode();

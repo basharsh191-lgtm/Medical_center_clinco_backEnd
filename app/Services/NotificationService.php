@@ -9,9 +9,6 @@ use Illuminate\Support\Facades\Log;
 
 class NotificationService
 {
-    /**
-     * إرسال إشعار لمستخدم واحد (حفظ في الداتا بيز + إرسال عبر FCM)
-     */
     public static function sendToUser(int $userId, string $title, string $body, array $data = [])
     {
         // 1. حفظ الإشعار في قاعدة البيانات ليظهر في الـ API getNotifications
@@ -32,10 +29,6 @@ class NotificationService
 
         return $notification;
     }
-
-    /**
-     * إرسال Push Notification باستخدام Firebase HTTP v1 API / Legacy
-     */
     private static function sendFcmNotification(array $tokens, string $title, string $body, array $data = [])
     {
         $serverKey = config('services.fcm.server_key'); // قم بضبطه في config/services.php

@@ -24,24 +24,24 @@ use App\Http\Controllers\SuperAdminController;
 use Illuminate\Support\Facades\Route;
 
 //Auth
-    Route::post('/register',[AuthController::class,'register']);
-    Route::post('/login',[AuthController::class,'login'])->middleware('throttle:5,1'); // تقييد محاولات تسجيل الدخول لمنع الهجمات
-    Route::post('/doctorLogin',[AuthController::class,'doctorLogin'])->middleware('throttle:5,1'); // تقييد محاولات تسجيل الدخول لمنع الهجمات
-    Route::post('logout',[AuthController::class,'logout'])->middleware('auth:sanctum');
-    Route::post('/password/forgot', [AuthController::class, 'forgotPassword']);
-    Route::post('/password/reset', [AuthController::class, 'resetPassword']);
-    Route::post('/verify_otp',[AuthController::class,'verifyOtp']);
-    Route::post('/resendOtp',[AuthController::class,'resendOtp']);
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1'); // تقييد محاولات تسجيل الدخول لمنع الهجمات
+Route::post('/doctorLogin', [AuthController::class, 'doctorLogin'])->middleware('throttle:5,1'); // تقييد محاولات تسجيل الدخول لمنع الهجمات
+Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+Route::post('/password/forgot', [AuthController::class, 'forgotPassword']);
+Route::post('/password/reset', [AuthController::class, 'resetPassword']);
+Route::post('/verify_otp', [AuthController::class, 'verifyOtp']);
+Route::post('/resendOtp', [AuthController::class, 'resendOtp']);
 
 //patient
-Route::middleware(['auth:sanctum','role:patient'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:patient'])->group(function () {
     Route::post('/storePatient', [PatientController::class, 'storePatient']);
     Route::put('patients/update', [PatientController::class, 'updatePatient']);
-    Route::get('/showPatient',[PatientController::class,'showPatient']);
-    Route::post('/appointmentStore',[PatientController::class,'appointmentStore']);
-    Route::put('/appointmentUpdate/{appointment}',[PatientController::class,'appointmentUpdate']);
-    Route::delete('/appointmentCancel/{appointment}',[PatientController::class,'appointmentCancel']);
-    Route::post('/ratings/{doctorId}',[RatingController::class,'storeRating']);
+    Route::get('/showPatient', [PatientController::class, 'showPatient']);
+    Route::post('/appointmentStore', [PatientController::class, 'appointmentStore']);
+    Route::put('/appointmentUpdate/{appointment}', [PatientController::class, 'appointmentUpdate']);
+    Route::delete('/appointmentCancel/{appointment}', [PatientController::class, 'appointmentCancel']);
+    Route::post('/ratings/{doctorId}', [RatingController::class, 'storeRating']);
     Route::get('/patient/getAppointments', [PatientController::class, 'patientAppointments']);
     Route::get('/appointments/{appointment}', [PatientController::class, 'showAppointment']);
     Route::get('/patient/my-labOrders', [LabOrderController::class, 'getMyLabOrders']);
@@ -62,26 +62,26 @@ Route::middleware(['auth:sanctum','role:patient'])->group(function () {
 
     //chat
     Route::post('/ask_ai', [ChatAiGeminiController::class, 'ask']);
-    Route::get('/chat-history',[ChatAiGeminiController::class,'getChatHistory']);
+    Route::get('/chat-history', [ChatAiGeminiController::class, 'getChatHistory']);
 });
 
-    //عرض تقييمات الأطباء
-    Route::get('/showAllRatingsDoctors', [RatingController::class, 'showAllRatingsDoctors']);
-    Route::get('/showDoctorRatings/{id}', [RatingController::class, 'showDoctorRatings']);
+//عرض تقييمات الأطباء
+Route::get('/showAllRatingsDoctors', [RatingController::class, 'showAllRatingsDoctors']);
+Route::get('/showDoctorRatings/{id}', [RatingController::class, 'showDoctorRatings']);
 
-    //show home page
-    //استدعاء العيادة مع دكاترتها
-    Route::get('/showClinic/{id}',[ClincController::class,'showClinic']);
-    Route::get('/showClinicAll',[ClincController::class,'showClinicAll']);
+//show home page
+//استدعاء العيادة مع دكاترتها
+Route::get('/showClinic/{id}', [ClincController::class, 'showClinic']);
+Route::get('/showClinicAll', [ClincController::class, 'showClinicAll']);
 
-    //عرض بروفايل دكتور معين
-    Route::get('/showDoctor/{id}',[ClincController::class,'showDoctor']);
-    //عرض اوقات المتاحة للطبيب
-    Route::get('doctors/{doctor}/available-slots', [AppointmentController::class, 'getAvailableSlots']);
-    Route::get('/clinics-with-doctors', [ClincController::class, 'getClinicsWithDoctors']);
+//عرض بروفايل دكتور معين
+Route::get('/showDoctor/{id}', [ClincController::class, 'showDoctor']);
+//عرض اوقات المتاحة للطبيب
+Route::get('doctors/{doctor}/available-slots', [AppointmentController::class, 'getAvailableSlots']);
+Route::get('/clinics-with-doctors', [ClincController::class, 'getClinicsWithDoctors']);
 
 //admain
-Route::middleware(['auth:sanctum','role:super_admin'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:super_admin'])->group(function () {
     //اضافة دكتور
     Route::post('/add/doctor/admin', [StaffController::class, 'storeDoctor']);
     //اضافة ريسبشن
@@ -101,11 +101,11 @@ Route::middleware(['auth:sanctum','role:super_admin'])->group(function () {
 });
 
 //reception
-Route::middleware(['auth:sanctum','role:reception'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:reception'])->group(function () {
     //اضافة جدول لدكتور معين داخل عيادة مخصصة
-    Route::post('store/schedule/reception',[ReceptionistScheduleController::class,'storeSchedule']);
+    Route::post('store/schedule/reception', [ReceptionistScheduleController::class, 'storeSchedule']);
     //جلب كل الاطباء في العيادة التي يشتغل بها الريسبشن
-    Route::get('get/doctors/reception',[ReceptionistScheduleController::class,'getMyClinicDoctors']);
+    Route::get('get/doctors/reception', [ReceptionistScheduleController::class, 'getMyClinicDoctors']);
     //تحويل حالة الموعد من  scheduled الىarrived
     Route::post('/receptionist/check-in', [ReceptionistScheduleController::class, 'checkInByPatientQR']);
     //جلب كل المواعيد الحالية للعيادة التي يشتغل بها الريسبشن
@@ -118,7 +118,7 @@ Route::middleware(['auth:sanctum','role:reception'])->group(function () {
     Route::post('reception/patients/new', [PatientController::class, 'storeAccountByReception']);
     //اضافة موعد walk-in
     Route::post('appointments/walk-in', [AppointmentController::class, 'storeWalkIn']);
-//home visit
+    //home visit
     Route::get('/show-home-visits', [ReceptionHomeVisitController::class, 'getClinicHomeVisits']);
     Route::post('/approve-home-visit/{id}', [ReceptionHomeVisitController::class, 'approveAndAssignDoctor']);
     Route::post('/reject-home-visit/{id}', [ReceptionHomeVisitController::class, 'rejectVisit']);
@@ -127,7 +127,7 @@ Route::middleware(['auth:sanctum','role:reception'])->group(function () {
     Route::get('/home-visits/{visitId}/available-doctors', [ReceptionHomeVisitController::class, 'getAvailableDoctorsForHomeVisit']);
 });
 //doctor
-Route::middleware(['auth:sanctum','role:doctor'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:doctor'])->group(function () {
     //تخزين السجل الطبي للمريض وإغلاق الموعد
     Route::post('/store-medical-record/{appointment}', [MedicalRecordController::class, 'storeMedicalRecord']);
     Route::put('/update-medical-record/{appointment}', [MedicalRecordController::class, 'updateMedicalRecord']);
@@ -197,8 +197,6 @@ Route::middleware(['auth:sanctum','role:doctor'])->group(function () {
     Route::put('/doctor/home-visits/{id}/start', [DoctorHomeVisitController::class, 'startVisit']);
     Route::put('/doctor/home-visits/{id}/arrive', [DoctorHomeVisitController::class, 'arriveVisit']);
     Route::put('/doctor/home-visits/{id}/complete', [DoctorHomeVisitController::class, 'completeVisit']);
-
-
 });
 
 
@@ -218,5 +216,4 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/conversations', [ConversationsController::class, 'store']);     // بدء/فتح محادثة مع شخص
     Route::get('/conversations/{id}', [ConversationsController::class, 'show']);  // جلب رسائل محادثة معينة
     Route::post('/chat/{conversationId}/message', [ChatController::class, 'sendMessage']);
-
 });

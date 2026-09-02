@@ -16,11 +16,6 @@ class PrescriptionController extends Controller
     {
         $this->medicalRecordService = $medicalRecordService;
     }
-
-    // ==========================================
-    // 1. روشتات العيادة (Clinic Prescriptions)
-    // ==========================================
-
     public function storePrescription(Request $request, Appointment $appointment)
     {
         $user = Auth::user()->load('doctorProfile');
@@ -51,7 +46,6 @@ class PrescriptionController extends Controller
         $result = $this->medicalRecordService->storePrescription($appointment, $validatedData);
         return response()->json($result['response'], $result['status_code']);
     }
-
     public function showPrescription($id)
     {
         $prescription = $this->medicalRecordService->getPrescription($id);
@@ -61,7 +55,6 @@ class PrescriptionController extends Controller
             'data'    => $prescription
         ]);
     }
-
     public function updatePrescription(Request $request, $id)
     {
         $validatedData = $request->validate([
@@ -81,7 +74,6 @@ class PrescriptionController extends Controller
             'data'    => $updatedPrescription
         ]);
     }
-
     public function destroyPrescription($id)
     {
         $this->medicalRecordService->deletePrescription($id);
@@ -91,11 +83,6 @@ class PrescriptionController extends Controller
             'message' => 'تم حذف الروشتة بنجاح.'
         ]);
     }
-
-    // ==========================================
-    // 2. روشتات الزيارات المنزلية (Home Visit Prescriptions)
-    // ==========================================
-
     public function storePrescriptionHomeVisite(Request $request, $homevisit_id)
     {
         $user = Auth::user()->load('doctorProfile');
@@ -129,7 +116,6 @@ class PrescriptionController extends Controller
 
         return response()->json($result['response'], $result['status_code']);
     }
-
     public function showPrescriptionHomeVisit($homevisit_id)
     {
         $homevisit = HomeVisit::with('prescriptions.items')->find($homevisit_id);
@@ -146,7 +132,6 @@ class PrescriptionController extends Controller
             'data'    => $homevisit->prescriptions->first()
         ], 200);
     }
-
     public function updatePrescriptionHomeVisit(Request $request, $homevisit_id)
     {
         $user = Auth::user()->load('doctorProfile');
@@ -180,7 +165,6 @@ class PrescriptionController extends Controller
 
         return response()->json($result['response'], $result['status_code']);
     }
-
     public function destroyPrescriptionHomeVisit($homevisit_id)
     {
         $user = Auth::user()->load('doctorProfile');

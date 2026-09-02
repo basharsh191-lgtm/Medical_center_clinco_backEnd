@@ -19,21 +19,17 @@ class ChatAiGeminiController extends Controller
         $userMessage = $request->input('message');
         $userId = Auth::id();
 
-        // 1. حفظ رسالة المستخدم الجديدة فوراً في قاعدة البيانات
         ChatMessage::create([
             'user_id' => $userId,
             'role'    => 'user',
             'message' => $userMessage,
         ]);
 
-        // 2. جلب آخر 6 رسائل للمستخدم لضمان ترتيب المحادثة وتوفير الـ Tokens
         $chatHistory = ChatMessage::where('user_id', $userId)
             ->latest() // ترتيب تنازلي (الأحدث أولاً)
             ->take(6)
             ->get()
             ->reverse(); // عكس الت ترتيب ليكون تصاعدياً (من القديم إلى الحديث)
-
-        // 3. تحويل المحادثة إلى الهيكل المعتمد لدى Gemini API
         $contents = [];
         foreach ($chatHistory as $chat) {
             $role = ($chat->role === 'user') ? 'user' : 'model';
@@ -52,9 +48,8 @@ class ChatAiGeminiController extends Controller
             return response()->json(['error' => 'مفتاح API غير موجود'], 500);
         }
 
-        $systemInstruction =".أنت «مِيدُو»، المساعد الطبي الذكي في عيادتنا. التخصصات المتاحة هي: أمراض القلب، طب الأسنان، الأمراض الجلدية، التغذية العلاجية، الأنف والأذن والحنجرة، أمراض الجهاز الهضمي، النساء والتوليد، طب العيون، طب الأطفال، الطب الباطني، وطب الطوارئ. أجب عن أسئلة المستخدم باختصار ووضوح واحترافية مع تقديم فائدة طبية مبسطة";
+        $systemInstruction = ".أنت «مِيدُو»، المساعد الطبي الذكي في عيادتنا. التخصصات المتاحة هي: أمراض القلب، طب الأسنان، الأمراض الجلدية، التغذية العلاجية، الأنف والأذن والحنجرة، أمراض الجهاز الهضمي، النساء والتوليد، طب العيون، طب الأطفال، الطب الباطني، وطب الطوارئ. أجب عن أسئلة المستخدم باختصار ووضوح واحترافية مع تقديم فائدة طبية مبسطة";
 
-        // 4. إرسال الطلب إلى Gemini
         try {
             $response = Http::timeout(30)
                 ->retry(2, 100)
@@ -96,7 +91,6 @@ class ChatAiGeminiController extends Controller
             return response()->json([
                 'reply' => $aiReply
             ]);
-
         } catch (\Exception $e) {
             Log::error('Gemini Exception: ' . $e->getMessage());
 
@@ -106,7 +100,6 @@ class ChatAiGeminiController extends Controller
         }
     }
 
-    // دالة احتياطية ترسل الرسالة الأخيرة فقط وتحفظ رد الـ AI
     private function askWithSingleMessage($userMessage, $userId)
     {
         $apiKey = config('services.gemini.key', env('GEMINI_API_KEY'));
@@ -133,8 +126,6 @@ class ChatAiGeminiController extends Controller
 
         if ($response->successful()) {
             $aiReply = $response['candidates'][0]['content']['parts'][0]['text'] ?? 'عذراً، لم أستطع الرد.';
-
-            // حفظ رد الـ AI في الدالة الاحتياطية
             ChatMessage::create([
                 'user_id' => $userId,
                 'role'    => 'model',
@@ -147,16 +138,16 @@ class ChatAiGeminiController extends Controller
         return response()->json(['error' => 'حدث خطأ أثناء الاتصال بالذكاء الاصطناعي'], 500);
     }
     public function getChatHistory(Request $request)
-{
-    $userId = Auth::id() ?? 1;
+    {
+        $userId = Auth::id() ?? 1;
 
-    $messages = ChatMessage::where('user_id', $userId)
-        ->orderBy('created_at', 'asc')
-        ->get(['id', 'role', 'message', 'created_at']);
+        $messages = ChatMessage::where('user_id', $userId)
+            ->orderBy('created_at', 'asc')
+            ->get(['id', 'role', 'message', 'created_at']);
 
-    return response()->json([
-        'status' => 'success',
-        'data'   => $messages
-    ], 200);
+        return response()->json([
+            'status' => 'success',
+            'data'   => $messages
+        ], 200);
     }
 }

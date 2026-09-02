@@ -15,23 +15,17 @@ class AppointmentController extends Controller
 {
     protected $appointmentService;
 
-    // حقن الـ Service داخل الـ Constructor
     public function __construct(AppointmentService $appointmentService)
     {
         $this->appointmentService = $appointmentService;
     }
 
-    /**
-     * جلب الفترات الزمنية المتاحة والمحجوزة لطبيب معين في تاريخ محدد
-     */
     public function getAvailableSlots(Request $request, $doctorId): JsonResponse
     {
-        // 1. التحقق من المدخلات وحفظ البيانات الموثوقة في مصفوفة
         $validated = $request->validate([
             'date' => 'required|date_format:Y-m-d|after_or_equal:today',
         ]);
 
-        // 2. جلب التاريخ من البيانات التي تم التحقق منها (تضمن عدم وجود null)
         $date = $validated['date'];
 
         // استدعاء الـ Logic من الـ Service
@@ -66,7 +60,7 @@ class AppointmentController extends Controller
                 'appointment_date' => $today,
                 'start_time'       => $validated['start_time'],
                 'end_time'         => $validated['end_time'],
-                'status'           => 'arrived', // وصل المريض للعيادة فورياً
+                'status'           => 'arrived',
                 'notes'            => $validated['notes'] ?? null,
             ]);
         });

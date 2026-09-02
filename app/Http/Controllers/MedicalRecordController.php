@@ -21,7 +21,6 @@ class MedicalRecordController extends Controller
     {
         $this->medicalRecordService = $medicalRecordService;
     }
-
     public function storeMedicalRecord(StoreMedicalRecordRequest $request, Appointment $appointment)
     {
         $user = Auth::user()->load('doctorProfile');
@@ -67,7 +66,6 @@ class MedicalRecordController extends Controller
             'data'    => $record
         ], 201);
     }
-
     public function storeHomeVisitMedicalRecord(StoreMedicalRecordRequest $request, $homevisit_id)
     {
         $user = Auth::user()->load('doctorProfile');
@@ -121,7 +119,6 @@ class MedicalRecordController extends Controller
             'data'    => $record
         ], 201);
     }
-
     public function updateMedicalRecord(UpdateMedicalRecordRequest $request, $id)
     {
         $user = Auth::user()->load('doctorProfile');
@@ -160,7 +157,6 @@ class MedicalRecordController extends Controller
             'data'    => $record
         ], 200);
     }
-
     public function destroyMedicalRecord($id)
     {
         $user = Auth::user()->load('doctorProfile');
@@ -197,7 +193,6 @@ class MedicalRecordController extends Controller
             'message' => 'تم حذف السجل الطبي بنجاح.'
         ], 200);
     }
-
     public function storePrescriptionHomeVisite(Request $request, $homevisit_id)
     {
         $user = Auth::user()->load('doctorProfile');
@@ -232,7 +227,6 @@ class MedicalRecordController extends Controller
 
         return response()->json($result['response'], $result['status_code']);
     }
-
     public function getMyMedicalHistory()
     {
         // 1. جلب رقم المريض من التوكن بكل أمان
@@ -255,7 +249,6 @@ class MedicalRecordController extends Controller
             'data'    => $history
         ]);
     }
-
     public function getPatientHistory(Patient $patient)
     {
         $user = Auth::user()->load('doctorProfile');
@@ -318,7 +311,6 @@ class MedicalRecordController extends Controller
             'data'    => $formattedHistory
         ], 200);
     }
-
     public function getPatientAllergies(Patient $patient)
     {
         $user = Auth::user()->load('doctorProfile');
@@ -338,7 +330,6 @@ class MedicalRecordController extends Controller
             'data'    => $allergiesData
         ], 200);
     }
-
     public function updatePatientAllergies(UpdatePatientAllergiesRequest $request, Patient $patient)
     {
         $user = Auth::user()->load('doctorProfile');
@@ -377,7 +368,6 @@ class MedicalRecordController extends Controller
             'data'    => $updatedData
         ], 200);
     }
-
     public function storeVitalSigns(Request $request, Appointment $appointment)
     {
         $user = Auth::user()->load('doctorProfile');

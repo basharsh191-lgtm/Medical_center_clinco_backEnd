@@ -24,235 +24,228 @@ use Illuminate\Support\Str;
 
 class PatientController extends Controller
 {
-protected $PatientService;
-protected $AppointmentService;
+    protected $PatientService;
+    protected $AppointmentService;
 
-use UploadFileTrait;
-public function __construct(PatientService $PatientService , AppointmentService $AppointmentService)
+    use UploadFileTrait;
+    public function __construct(PatientService $PatientService, AppointmentService $AppointmentService)
     {
         $this->PatientService = $PatientService;
         $this->AppointmentService = $AppointmentService;
-}
-public function storePatient(PatientRequest $request)
-{
-    $validated = $request->validated();
-    $patient = $this->PatientService->createPatient($validated);
-    if (!$patient) {
+    }
+    public function storePatient(PatientRequest $request)
+    {
+        $validated = $request->validated();
+        $patient = $this->PatientService->createPatient($validated);
+        if (!$patient) {
+            return response()->json([
+                'success' => false,
+                'message' => 'هذا المستخدم لديه حساب مريض بالفعل.'
+            ], 422);
+        }
         return response()->json([
-            'success' => false,
-            'message' => 'هذا المستخدم لديه حساب مريض بالفعل.'
-        ], 422);
+            'success' => true,
+            'message' => 'تم إنشاء ملف المريض بنجاح',
+            'data' => $patient,
+        ], 201);
     }
-    return response()->json([
-        'success' => true,
-        'message' => 'تم إنشاء ملف المريض بنجاح',
-        'data' => $patient,
-    ], 201);
-}
-public function showPatient()
-{
-    return $this->PatientService->getMyProfile();
-}
-public function updatePatient(PatientUpdateRequest $request)
-{
-    $patient = Patient::where('user_id', Auth::id())->first();
+    public function showPatient()
+    {
+        return $this->PatientService->getMyProfile();
+    }
+    public function updatePatient(PatientUpdateRequest $request)
+    {
+        $patient = Patient::where('user_id', Auth::id())->first();
 
-    if (!$patient) {
+        if (!$patient) {
+            return response()->json([
+                'success' => false,
+                'message' => 'لم يتم العثور على ملف مريض لهذا الحساب.'
+            ], 404);
+        }
+
+        $validated = $request->validated();
+        $updatedPatient = $this->PatientService->updatePatient($patient, $validated);
+
+        if (!$updatedPatient) {
+            return response()->json([
+                'success' => false,
+                'message' => 'حدث خطأ أثناء تحديث البيانات، يرجى المحاولة لاحقاً.'
+            ], 500);
+        }
+
         return response()->json([
-            'success' => false,
-            'message' => 'لم يتم العثور على ملف مريض لهذا الحساب.'
-        ], 404);
+            'success' => true,
+            'message' => 'تم تحديث ملفك الشخصي بنجاح',
+            'data'    => $updatedPatient,
+        ], 200);
     }
+    public function appointmentStore(AppointmentPatientRequest $request)
+    {
+        $appointment = Appointment::create($request->validated());
 
-    $validated = $request->validated();
-    $updatedPatient = $this->PatientService->updatePatient($patient, $validated);
-
-    if (!$updatedPatient) {
         return response()->json([
-            'success' => false,
-            'message' => 'حدث خطأ أثناء تحديث البيانات، يرجى المحاولة لاحقاً.'
-        ], 500);
+            'success' => true,
+            'message' => 'تم حجز الموعد بنجاح.',
+            'data'    => $appointment
+        ], 201);
     }
+    public function appointmentUpdate(AppointmentUpdateRequest $request, Appointment $appointment)
+    {
+        // نحتفظ بالقيم القديمة قبل التحديث (الـ service بيعدل نفس الـ object في الذاكرة)
+        $oldDate = $appointment->appointment_date;
+        $oldStartTime = $appointment->start_time;
 
-    return response()->json([
-        'success' => true,
-        'message' => 'تم تحديث ملفك الشخصي بنجاح',
-        'data'    => $updatedPatient,
-    ], 200);
-}
-//طريقة جديدة لل clean code
-public function appointmentStore(AppointmentPatientRequest $request)
-{
-    $appointment = Appointment::create($request->validated());
+        $result = $this->AppointmentService->updateAppointment($appointment, $request->validated());
 
-    return response()->json([
-        'success' => true,
-        'message' => 'تم حجز الموعد بنجاح.',
-        'data'    => $appointment
-    ], 201);
-}
-public function appointmentUpdate(AppointmentUpdateRequest $request, Appointment $appointment)
-{
-    // نحتفظ بالقيم القديمة قبل التحديث (الـ service بيعدل نفس الـ object في الذاكرة)
-    $oldDate = $appointment->appointment_date;
-    $oldStartTime = $appointment->start_time;
+        if (!$result['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message']
+            ], 422);
+        }
 
-    $result = $this->AppointmentService->updateAppointment($appointment, $request->validated());
+        $updatedAppointment = $result['data'];
 
-    if (!$result['success']) {
+        $isTimeChanged = ($oldDate != $updatedAppointment->appointment_date) ||
+            ($oldStartTime != $updatedAppointment->start_time);
+
+        if ($isTimeChanged) {
+            $this->notifyDoctorAndReception(
+                $updatedAppointment,
+                $request->user(),
+                'تعديل موعد كشف',
+                'تغيير موعد في العيادة',
+                "قام المريض {$request->user()->name} بتغيير موعده إلى {$updatedAppointment->appointment_date}",
+                "تم تعديل موعد المريض {$request->user()->name}"
+            );
+        }
+
         return response()->json([
-            'success' => false,
-            'message' => $result['message']
-        ], 422);
+            'success' => true,
+            'message' => 'تم تحديث الموعد بنجاح.',
+            'data'    => $updatedAppointment
+        ], 200);
     }
+    public function appointmentCancel(Request $request, Appointment $appointment)
+    {
+        $result = $this->AppointmentService->cancelAppointment($appointment);
 
-    $updatedAppointment = $result['data'];
+        if ($result['status_code'] === 200) {
+            $this->notifyDoctorAndReception(
+                $result['response']['data'],
+                $request->user(),
+                'إلغاء موعد كشف',
+                'إلغاء موعد في العيادة',
+                "قام المريض {$request->user()->name} بإلغاء موعده",
+                "قام المريض {$request->user()->name} بإلغاء موعده"
+            );
+        }
 
-    $isTimeChanged = ($oldDate != $updatedAppointment->appointment_date) ||
-                     ($oldStartTime != $updatedAppointment->start_time);
-
-    if ($isTimeChanged) {
-        $this->notifyDoctorAndReception(
-            $updatedAppointment,
-            $request->user(),
-            'تعديل موعد كشف',
-            'تغيير موعد في العيادة',
-            "قام المريض {$request->user()->name} بتغيير موعده إلى {$updatedAppointment->appointment_date}",
-            "تم تعديل موعد المريض {$request->user()->name}"
-        );
+        return response()->json($result['response'], $result['status_code']);
     }
+    private function notifyDoctorAndReception(
+        Appointment $appointment,
+        $currentUser,
+        string $doctorTitle,
+        string $receptionTitle,
+        string $doctorBody,
+        string $receptionBody
+    ) {
+        // 1. إشعار الطبيب — لازم نجيب user_id تبعه، مش doctor_id مباشرة
+        $doctorUserId = $appointment->doctor?->user_id;
 
-    return response()->json([
-        'success' => true,
-        'message' => 'تم تحديث الموعد بنجاح.',
-        'data'    => $updatedAppointment
-    ], 200);
-}
-
-public function appointmentCancel(Request $request, Appointment $appointment)
-{
-    $result = $this->AppointmentService->cancelAppointment($appointment);
-
-    if ($result['status_code'] === 200) {
-        $this->notifyDoctorAndReception(
-            $result['response']['data'],
-            $request->user(),
-            'إلغاء موعد كشف',
-            'إلغاء موعد في العيادة',
-            "قام المريض {$request->user()->name} بإلغاء موعده",
-            "قام المريض {$request->user()->name} بإلغاء موعده"
-        );
-    }
-
-    return response()->json($result['response'], $result['status_code']);
-}
-
-/**
- * إرسال إشعار للطبيب (عبر user_id تبعه) ولموظفي استقبال العيادة
- */
-private function notifyDoctorAndReception(
-    Appointment $appointment,
-    $currentUser,
-    string $doctorTitle,
-    string $receptionTitle,
-    string $doctorBody,
-    string $receptionBody
-) {
-    // 1. إشعار الطبيب — لازم نجيب user_id تبعه، مش doctor_id مباشرة
-    $doctorUserId = $appointment->doctor?->user_id;
-
-    if ($doctorUserId) {
-        NotificationService::sendToUser(
-            $doctorUserId,
-            $doctorTitle,
-            $doctorBody,
-            ['appointment_id' => $appointment->id]
-        );
-    }
-
-    // 2. إشعار موظفي استقبال العيادة
-    $clinicId = $appointment->clinic_id;
-
-    if ($clinicId) {
-        $receptionistUserIds = User::whereHas('reception', function ($query) use ($clinicId) {
-            $query->where('clinic_id', $clinicId);
-        })->pluck('id');
-
-        foreach ($receptionistUserIds as $userId) {
+        if ($doctorUserId) {
             NotificationService::sendToUser(
-                $userId,
-                $receptionTitle,
-                $receptionBody,
+                $doctorUserId,
+                $doctorTitle,
+                $doctorBody,
                 ['appointment_id' => $appointment->id]
             );
         }
+
+        // 2. إشعار موظفي استقبال العيادة
+        $clinicId = $appointment->clinic_id;
+
+        if ($clinicId) {
+            $receptionistUserIds = User::whereHas('reception', function ($query) use ($clinicId) {
+                $query->where('clinic_id', $clinicId);
+            })->pluck('id');
+
+            foreach ($receptionistUserIds as $userId) {
+                NotificationService::sendToUser(
+                    $userId,
+                    $receptionTitle,
+                    $receptionBody,
+                    ['appointment_id' => $appointment->id]
+                );
+            }
+        }
     }
-}
-public function patientAppointments(){
+    public function patientAppointments()
+    {
         $result = $this->PatientService->getAllAppointments();
         return response()->json($result['response'], $result['status_code']);
     }
-public function getMyQrData()
-{
-    $patient = Auth::user()->patient;
-
-    if (!$patient->qr_token) {
-        $patient->update(['qr_token' => Str::uuid()]);
-    }
-
-    return response()->json([
-        'status'  => 'success',
-        'message' => 'تم جلب بيانات الـ QR بنجاح',
-        'data'    => [
-        'qr_string' => $patient->qr_token
-        ]
-    ]);
-}
-// 1. جلب قائمة الأطباء المفضلين
-public function getFavorites()
-{
-    $patient = Patient::where('user_id', Auth::id())->first();
-
-    if (!$patient) {
-        return response()->json(['success' => false, 'message' => 'ملف المريض غير موجود.'], 404);
-    }
-
-    $doctors = $this->PatientService->getFavoriteDoctors($patient);
-
-    return response()->json([
-        'success' => true,
-        'message' => 'تم جلب قائمة الأطباء المفضلين بنجاح.',
-        'data'    => $doctors
-    ], 200);
-}
-public function toggleFavorite(Doctor $doctor)
-{
-    $patient = Patient::where('user_id', Auth::id())->first();
-    if (!$patient)
+    public function getMyQrData()
     {
-        return response()->json(['success' => false, 'message' => 'ملف المريض غير موجود.'], 404);
-    }
+        $patient = Auth::user()->patient;
 
-    $result = $this->PatientService->toggleDoctorFavorite($patient, $doctor);
+        if (!$patient->qr_token) {
+            $patient->update(['qr_token' => Str::uuid()]);
+        }
 
-    return response()->json($result['response'], $result['status_code']);
-}
-public function getNextAppointment()
-{
-    $patient = Patient::where('user_id', Auth::id())->first();
-
-    if (!$patient) {
         return response()->json([
-            'success' => false,
-            'message' => 'ملف المريض غير موجود.'
-        ], 404);
+            'status'  => 'success',
+            'message' => 'تم جلب بيانات الـ QR بنجاح',
+            'data'    => [
+                'qr_string' => $patient->qr_token
+            ]
+        ]);
     }
+    public function getFavorites()
+    {
+        $patient = Patient::where('user_id', Auth::id())->first();
 
-    $result = $this->PatientService->getNextAppointment($patient);
+        if (!$patient) {
+            return response()->json(['success' => false, 'message' => 'ملف المريض غير موجود.'], 404);
+        }
 
-    return response()->json($result['response'], $result['status_code']);
-}
-public function showAppointment(Appointment $appointment)
+        $doctors = $this->PatientService->getFavoriteDoctors($patient);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم جلب قائمة الأطباء المفضلين بنجاح.',
+            'data'    => $doctors
+        ], 200);
+    }
+    public function toggleFavorite(Doctor $doctor)
+    {
+        $patient = Patient::where('user_id', Auth::id())->first();
+        if (!$patient) {
+            return response()->json(['success' => false, 'message' => 'ملف المريض غير موجود.'], 404);
+        }
+
+        $result = $this->PatientService->toggleDoctorFavorite($patient, $doctor);
+
+        return response()->json($result['response'], $result['status_code']);
+    }
+    public function getNextAppointment()
+    {
+        $patient = Patient::where('user_id', Auth::id())->first();
+
+        if (!$patient) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ملف المريض غير موجود.'
+            ], 404);
+        }
+
+        $result = $this->PatientService->getNextAppointment($patient);
+
+        return response()->json($result['response'], $result['status_code']);
+    }
+    public function showAppointment(Appointment $appointment)
     {
         $user = Auth::user();
 
@@ -274,15 +267,15 @@ public function showAppointment(Appointment $appointment)
             }
         }
 
-        $appointment->load(['prescription.items','doctor.user','clinic','labOrders.tests']);
+        $appointment->load(['prescription.items', 'doctor.user', 'clinic', 'labOrders.tests']);
 
         return response()->json([
             'success' => true,
             'message' => 'تم جلب تفاصيل الموعد بنجاح.',
             'data'    => $appointment
         ], 200);
-}
-public function storeAccountByReception(CreatePatientRequest $request)
+    }
+    public function storeAccountByReception(CreatePatientRequest $request)
     {
         $validated = $request->validated();
 
@@ -299,7 +292,7 @@ public function storeAccountByReception(CreatePatientRequest $request)
 
             // إسناد Spatie Role
             $user->assignRole('patient');
-            Mail::to($validated['email'])->send(new ReceptionEmail($validated['email'],$validated['password']));
+            Mail::to($validated['email'])->send(new ReceptionEmail($validated['email'], $validated['password']));
 
             // 2. إنشاء ملف المريض (الـ qr_token يُولّد تلقائياً عبر boot Method)
             $patient = $user->patient()->create([
@@ -325,7 +318,5 @@ public function storeAccountByReception(CreatePatientRequest $request)
             'message' => 'تم إنشاء ملف المريض بنجاح.',
             'data'    => $patient,
         ], 201);
+    }
 }
-}
-
-

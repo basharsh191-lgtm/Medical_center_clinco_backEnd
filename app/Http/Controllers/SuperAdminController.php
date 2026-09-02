@@ -30,20 +30,20 @@ class SuperAdminController extends Controller
         ]);
     }
     public function getPatients()
-        {
-            $totalPatients = Patient::count();
-            $patients = Patient::with(['user' => function ($query) {
-                $query->select('id', 'name', 'last_name', 'email', 'phone', 'is_verified');
-            }])
+    {
+        $totalPatients = Patient::count();
+        $patients = Patient::with(['user' => function ($query) {
+            $query->select('id', 'name', 'last_name', 'email', 'phone', 'is_verified');
+        }])
             ->latest()
             ->paginate(15);
 
-            return response()->json([
-                'status' => true,
-                'message' => 'Patients retrieved successfully.',
-                'total_count' => $totalPatients,
-                'data' => $patients
-            ]);
+        return response()->json([
+            'status' => true,
+            'message' => 'Patients retrieved successfully.',
+            'total_count' => $totalPatients,
+            'data' => $patients
+        ]);
     }
     public function getDoctors()
     {
@@ -55,9 +55,9 @@ class SuperAdminController extends Controller
             'speciality',
             'clinic'
         ])
-        ->withAvg('ratings', 'stars')
-        ->latest()
-        ->paginate(15);
+            ->withAvg('ratings', 'stars')
+            ->latest()
+            ->paginate(15);
 
         return response()->json([
             'status' => true,
@@ -68,21 +68,21 @@ class SuperAdminController extends Controller
     }
     public function getReceptionists()
     {
-    $totalReceptionists = Reception::count();
-    $receptionists = Reception::with([
-        'user' => function ($query) {
-            $query->select('id', 'name', 'last_name', 'email', 'phone', 'is_verified');
-        },
-        'clinic'
-    ])
-    ->latest()
-    ->paginate(15);
-    return response()->json([
-        'status' => true,
-        'message' => 'Receptionists retrieved successfully.',
-        'total_count' => $totalReceptionists,
-        'data' => $receptionists
-    ]);
+        $totalReceptionists = Reception::count();
+        $receptionists = Reception::with([
+            'user' => function ($query) {
+                $query->select('id', 'name', 'last_name', 'email', 'phone', 'is_verified');
+            },
+            'clinic'
+        ])
+            ->latest()
+            ->paginate(15);
+        return response()->json([
+            'status' => true,
+            'message' => 'Receptionists retrieved successfully.',
+            'total_count' => $totalReceptionists,
+            'data' => $receptionists
+        ]);
     }
     public function getClinicAppointments(Request $request, $clinicId)
     {
@@ -110,7 +110,7 @@ class SuperAdminController extends Controller
             ],
             'counts' => $counts,
             'data'   => $appointments
-     ]);
+        ]);
     }
     public function getHomeVisits(Request $request)
     {
@@ -132,6 +132,4 @@ class SuperAdminController extends Controller
             'data'              => $homeVisits
         ]);
     }
-
 }
-

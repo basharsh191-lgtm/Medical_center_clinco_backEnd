@@ -8,7 +8,6 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-// أضفنا ShouldBroadcast لكي يفهم لارافل أن هذا الحدث يجب إرساله عبر Pusher
 class MessageSent implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
@@ -21,10 +20,6 @@ class MessageSent implements ShouldBroadcast
         $this->message = $message;
         $this->conversationId = $conversationId;
     }
-
-    /**
-     * تحديد القناة الخاصة بالمحادثة
-     */
     public function broadcastOn(): array
     {
         return [

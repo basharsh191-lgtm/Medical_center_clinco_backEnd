@@ -26,7 +26,7 @@ class StaffService
 
             // Assign Role
             $user->assignRole($role);
-            Mail::to($data['email'])->send(new superAdminEmail($data['email'],$data['password']));
+            Mail::to($data['email'])->send(new superAdminEmail($data['email'], $data['password']));
 
             // إنشاء البيانات الخاصة حسب الدور
             match ($role) {

@@ -15,11 +15,10 @@ class HomeCareLabOrderController extends Controller
     {
         $this->medicalRecordService = $medicalRecordService;
     }
-    // إنشاء طلب للزيارة المنزلية
     public function store(StoreHomeLabOrderRequest $request, $visitId)
     {
         $data = $request->validated();
-        $data['home_visit_id'] = $visitId; // ربط الطلب بالزيارة المنزلية
+        $data['home_visit_id'] = $visitId;
 
         $labOrder = $this->medicalRecordService->createHomeOrder($data);
 
@@ -29,7 +28,6 @@ class HomeCareLabOrderController extends Controller
             'data'    => $labOrder
         ], 201);
     }
-    // عرض بيانات الطلب للتعديل
     public function edit($id)
     {
         $order = LabOrder::with('tests')->findOrFail($id);
@@ -39,7 +37,6 @@ class HomeCareLabOrderController extends Controller
             'selected_tests' => $order->tests->pluck('test_name')
         ], 200);
     }
-    // تحديث طلب المختبر
     public function update(UpdateLabOrderRequest $request, $id)
     {
         $labOrder = $this->medicalRecordService->updateOrder($id, $request->validated());
@@ -57,7 +54,6 @@ class HomeCareLabOrderController extends Controller
             'data'    => $labOrder
         ], 200);
     }
-    // إلغاء طلب المختبر
     public function cancel($id)
     {
         $order = LabOrder::where('id', $id)

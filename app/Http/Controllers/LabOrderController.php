@@ -10,6 +10,7 @@ use App\Models\LabOrder;
 use App\Models\Patient;
 use App\Services\MedicalRecordService;
 use Illuminate\Support\Facades\Auth;
+
 class LabOrderController extends Controller
 {
 
@@ -19,7 +20,6 @@ class LabOrderController extends Controller
     {
         $this->medicalRecordService = $medicalRecordService;
     }
-
     public function storeLabOrderDoctor(StoreLabOrderRequest $request)
     {
         $labOrder = $this->medicalRecordService->createOrder($request->validated());
@@ -30,19 +30,19 @@ class LabOrderController extends Controller
         ], 201);
     }
     public function cancelLabOrder($id)
-{
-    $doctor = Doctor::where('user_id', Auth::id())->first();
+    {
+        $doctor = Doctor::where('user_id', Auth::id())->first();
 
-    $order = LabOrder::where('id', $id)
-        ->where('overall_status', 'pending')
-        ->firstOrFail();
+        $order = LabOrder::where('id', $id)
+            ->where('overall_status', 'pending')
+            ->firstOrFail();
 
-    $order->update([
-        'overall_status' => 'cancelled'
-    ]);
-    return response()->json([
-        'message' => 'تم إلغاء الطلب'
-    ]);
+        $order->update([
+            'overall_status' => 'cancelled'
+        ]);
+        return response()->json([
+            'message' => 'تم إلغاء الطلب'
+        ]);
     }
     public function updateLabOrderDoctor(UpdateLabOrderRequest $request, $id)
     {
@@ -66,13 +66,13 @@ class LabOrderController extends Controller
         ], 200);
     }
     public function editLabOrder($id)
-{
-    $order = LabOrder::with('tests')->findOrFail($id);
+    {
+        $order = LabOrder::with('tests')->findOrFail($id);
 
-    return response()->json([
-        'order' => $order,
-        'selected_tests' => $order->tests->pluck('test_name')
-    ]);
+        return response()->json([
+            'order' => $order,
+            'selected_tests' => $order->tests->pluck('test_name')
+        ]);
     }
     public function getMyLabOrders()
     {
@@ -84,8 +84,8 @@ class LabOrderController extends Controller
             ], 403);
         }
         $labOrders = LabOrder::whereHas('appointment', function ($q) use ($patient) {
-                $q->where('patient_id', $patient->id);
-            })
+            $q->where('patient_id', $patient->id);
+        })
             ->with([
                 'tests'
             ])
@@ -97,5 +97,4 @@ class LabOrderController extends Controller
             'data' => $labOrders
         ]);
     }
-
 }

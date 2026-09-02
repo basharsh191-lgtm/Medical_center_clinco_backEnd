@@ -63,7 +63,6 @@ class NotificationController extends Controller
             'data' => $notification
         ]);
     }
-    // وضع علامة مقروء لكل الإشعارات
     public function markAllAsRead()
     {
         Notification::where('user_id', Auth::id())
@@ -95,8 +94,8 @@ class NotificationController extends Controller
             $data = $notification->data;
 
             // إذا كان المريض مرتبئ بصلة مع نموذج الإشعار أو من جدول المستخدمين
-        $patient = User::find($data['patient_id'] ?? null);
-        $data['last_name'] = $patient ? $patient->last_name : null;
+            $patient = User::find($data['patient_id'] ?? null);
+            $data['last_name'] = $patient ? $patient->last_name : null;
 
             $notification->data = $data;
             return $notification;
@@ -108,25 +107,24 @@ class NotificationController extends Controller
         ], 200);
     }
     public function showNotification($id)
-{
-    $notification = Notification::where('user_id', Auth::id())
-        ->where('id', $id)
-        ->first();
+    {
+        $notification = Notification::where('user_id', Auth::id())
+            ->where('id', $id)
+            ->first();
 
-    if (!$notification) {
+        if (!$notification) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Notification not found'
+            ], 404);
+        }
+        if (!$notification->is_read) {
+            $notification->update(['is_read' => true]);
+        }
+
         return response()->json([
-            'status' => 'error',
-            'message' => 'Notification not found'
-        ], 404);
+            'status' => 'success',
+            'data' => $notification
+        ]);
     }
-    if (!$notification->is_read) {
-        $notification->update(['is_read' => true]);
-    }
-
-    return response()->json([
-        'status' => 'success',
-        'data' => $notification
-    ]);
-    }
-
 }

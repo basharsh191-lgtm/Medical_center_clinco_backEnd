@@ -17,10 +17,6 @@ use Illuminate\Validation\ValidationException;
 
 class MedicalRecordService
 {
-    // ==========================================
-    // 1. السجلات الطبية والحساسيات (Medical Records & Allergies)
-    // ==========================================
-
     public function createRecord(array $data): MedicalRecord
     {
         return DB::transaction(function () use ($data) {
@@ -36,7 +32,6 @@ class MedicalRecordService
             return $record;
         });
     }
-
     public function getPatientHistory(int $patientId, int $specializationId)
     {
         return MedicalRecord::where('patient_id', $patientId)
@@ -50,24 +45,17 @@ class MedicalRecordService
             ->orderBy('created_at', 'desc')
             ->get();
     }
-
     public function getPatientAllergies(int $patientId)
     {
         return Patient::select('id', 'blood_type', 'allergies', 'chronic_diseases', 'hereditary')
             ->findOrFail($patientId);
     }
-
     public function updatePatientAllergies(int $patientId, array $data)
     {
         $patient = Patient::findOrFail($patientId);
         $patient->update($data);
         return $patient->only(['id', 'blood_type', 'allergies', 'chronic_diseases', 'hereditary']);
     }
-
-    // ==========================================
-    // 2. الروشتات الطبية للمواعيد (Clinic Prescriptions)
-    // ==========================================
-
     public function storePrescription(Appointment $appointment, array $data): array
     {
         try {
@@ -106,12 +94,10 @@ class MedicalRecordService
             ];
         }
     }
-
     public function getPrescription($id)
     {
         return Prescription::with('items')->findOrFail($id);
     }
-
     public function updatePrescription($id, array $data)
     {
         return DB::transaction(function () use ($id, $data) {
@@ -127,7 +113,6 @@ class MedicalRecordService
             return $prescription->load('items');
         });
     }
-
     public function deletePrescription($id)
     {
         return DB::transaction(function () use ($id) {
@@ -135,11 +120,6 @@ class MedicalRecordService
             return $prescription->delete();
         });
     }
-
-    // ==========================================
-    // 3. الروشتات الطبية للزيارات المنزلية (Home Visit Prescriptions)
-    // ==========================================
-
     public function storePrescriptionHomeVisit(HomeVisit $homevisit, array $data): array
     {
         try {
@@ -184,7 +164,6 @@ class MedicalRecordService
             ];
         }
     }
-
     public function updatePrescriptionHomeVisit(HomeVisit $homevisit, array $data)
     {
         return DB::transaction(function () use ($homevisit, $data) {
@@ -219,7 +198,6 @@ class MedicalRecordService
             ];
         });
     }
-
     public function deletePrescriptionHomeVisit(HomeVisit $homevisit)
     {
         return DB::transaction(function () use ($homevisit) {
@@ -247,7 +225,11 @@ class MedicalRecordService
             ];
         });
     }
+    public function createOrder(array $data)
+    {
+        $user = Auth::user();
 
+<<<<<<< Updated upstream
     // ==========================================
     // 4. طلبات التحاليل (Lab Orders) - عيادة وزيارات
     // ==========================================
@@ -289,12 +271,47 @@ public function createOrder(array $data)
 
             // استخدام createMany يضمن المرور عبر Eloquent وحل مشاكل Strict Mode
             $labOrder->tests()->createMany($testsData);
+=======
+        $doctor = Doctor::where('user_id', $user->id)->first();
+        if (!$doctor) {
+            throw ValidationException::withMessages([
+                'doctor' => 'الحساب الحالي غير مسجل كطبيب.',
+            ]);
+>>>>>>> Stashed changes
         }
 
-        return $labOrder->load('tests');
-    });
-}
+        $appointmentExists = Appointment::where('id', $data['appointment_id'])
+            ->where('doctor_id', $doctor->id)
+            ->exists();
 
+        if (!$appointmentExists) {
+            throw ValidationException::withMessages([
+                'appointment_id' => 'لا يمكنك طلب تحليل لمريض غير مسجل في مواعيدك الشخصية.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($data) {
+            $labOrder = LabOrder::create([
+                'appointment_id' => $data['appointment_id'],
+                'doctor_notes'   => $data['doctor_notes'] ?? null,
+                'overall_status' => 'pending',
+            ]);
+
+            if (!empty($data['tests'])) {
+                $testsData = array_map(function ($testName) {
+                    return [
+                        'test_name' => $testName,
+                        'status'    => 'pending',
+                    ];
+                }, $data['tests']);
+
+                // استخدام createMany يضمن المرور عبر Eloquent وحل مشاكل Strict Mode
+                $labOrder->tests()->createMany($testsData);
+            }
+
+            return $labOrder->load('tests');
+        });
+    }
     public function createHomeOrder(array $data)
     {
         return DB::transaction(function () use ($data) {
@@ -315,7 +332,6 @@ public function createOrder(array $data)
             return $labOrder->load('tests');
         });
     }
-
     public function updateOrder(int $id, array $data)
     {
         return DB::transaction(function () use ($id, $data) {

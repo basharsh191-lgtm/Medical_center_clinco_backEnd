@@ -21,7 +21,7 @@ class FcmService
      * @return array
      */
 
-            protected $messaging;
+    protected $messaging;
 
     public function __construct()
     {
@@ -98,47 +98,40 @@ class FcmService
             ];
         }
     }
-
-
-
     public function sendToUser(int $userID, string $title, string $body, array $data = [])
     {
-        try
-    {
-            $tokens=DeviceTokens::where('user_id',$userID)->pluck('token')->toArray();
-            if(empty($tokens))
-            {
+        try {
+            $tokens = DeviceTokens::where('user_id', $userID)->pluck('token')->toArray();
+            if (empty($tokens)) {
                 Log::warning("No device tokens found for user ID: $userID");
                 return ['success' => false, 'message' => 'No device tokens found'];
             }
-            $notification=ModelsNotification::create([
-                'user_id'=>$userID,
-                'title'=>$title,
-                'body'=>$body,
-                'data'=>$data,
-                'is_read'=>false
+            $notification = ModelsNotification::create([
+                'user_id' => $userID,
+                'title' => $title,
+                'body' => $body,
+                'data' => $data,
+                'is_read' => false
             ]);
-            Log::info("Notification saved to database with ID: ".$notification->id);
+            Log::info("Notification saved to database with ID: " . $notification->id);
 
             // $firebaseNotification=FacadesNotification::create($title,$body);
             $firebaseNotification = \Kreait\Firebase\Messaging\Notification::create($title, $body);
-            $message=CloudMessage::new()
-            ->withNotification($firebaseNotification)
-            ->withData($data);
-            $successCount=0;
-            $failedCount=0;
+            $message = CloudMessage::new()
+                ->withNotification($firebaseNotification)
+                ->withData($data);
+            $successCount = 0;
+            $failedCount = 0;
 
-            foreach($tokens as $token)
-            {
-                try{
-                    $messageToSend=$message->withChangedTarget('token',$token);
+            foreach ($tokens as $token) {
+                try {
+                    $messageToSend = $message->withChangedTarget('token', $token);
                     $this->messaging->send($messageToSend);
                     $successCount++;
-                    Log::info("Notification sent successfully to token: ".substr($token,0,20)."...");
-                }catch(\Exception $e)
-                {
+                    Log::info("Notification sent successfully to token: " . substr($token, 0, 20) . "...");
+                } catch (\Exception $e) {
                     $failedCount++;
-                    Log::error("Failed to send notification to token: ".substr($token,0,20)."... Error: ".$e->getMessage());
+                    Log::error("Failed to send notification to token: " . substr($token, 0, 20) . "... Error: " . $e->getMessage());
                 }
             }
             Log::info("Notification delivery result - Success: $successCount, Failed: $failedCount");
@@ -148,11 +141,9 @@ class FcmService
                 'sent' => $successCount,
                 'failed' => $failedCount
             ];
-    }catch(\Exception $e)
-    {
-        Log::error('Failed to process notification: '.$e->getMessage());
-        return ['success' => false, 'message' => $e->getMessage()];
-
-    }
+        } catch (\Exception $e) {
+            Log::error('Failed to process notification: ' . $e->getMessage());
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
     }
 }

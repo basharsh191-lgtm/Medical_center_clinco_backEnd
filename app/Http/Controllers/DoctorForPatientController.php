@@ -15,124 +15,116 @@ use Illuminate\Support\Facades\Storage;
 class DoctorForPatientController extends Controller
 {
     public function getPatientFullProfileById($id)
-{
-    // 1. جلب المريض بواسطة الـ ID مع كافة تفاصيل الحساب، السجلات الطبية، المرفقات، والمواعيد
-    $patient = Patient::with([
-        'user',
-        'medicalRecords.doctor.user',
-        'medicalRecords.appointment.prescription.items',
-        // جلب موعد اليوم الفعلي (إن وجد)
-        'appointments' => function($query) {
-            $query->whereIn('status', ['pending', 'scheduled', 'arrived'])
-                  ->whereDate('appointment_date', Carbon::today())
-                  ->latest();
+    {
+        $patient = Patient::with([
+            'user',
+            'medicalRecords.doctor.user',
+            'medicalRecords.appointment.prescription.items',
+            // جلب موعد اليوم الفعلي (إن وجد)
+            'appointments' => function ($query) {
+                $query->whereIn('status', ['pending', 'scheduled', 'arrived'])
+                    ->whereDate('appointment_date', Carbon::today())
+                    ->latest();
+            }
+        ])->find($id);
+        if (!$patient) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'عذراً، المريض غير مسجل في النظام أو الرقم غير صحيح.'
+            ], 404);
         }
-    ])->find($id); // التعديل هنا: استخدام find() للبحث المباشر عن طريق الـ ID
+        $attachments = Attachment::with('appointment.doctor.user')
+            ->where('patient_id', $patient->id)
+            ->latest()
+            ->get();
 
-    // 2. التحقق من وجود المريض
-    if (!$patient) {
+        $currentAppt = $patient->appointments->first();
+        $data = [
+            'personal_info' => [
+                'id'         => $patient->id,
+                'name'       => ($patient->user->name ?? 'غير متوفر') . ' ' . ($patient->user->last_name ?? ''),
+                'birth_date' => $patient->birth_date,
+                'age'        => $patient->birth_date ? Carbon::parse($patient->birth_date)->age : null,
+                'gender'     => $patient->gender,
+                'blood_type' => $patient->blood_type,
+                'weight'     => $patient->weight,
+                'taller'     => $patient->taller,
+            ],
+            'medical_background' => [
+                'allergies'        => $patient->allergies,
+                'chronic_diseases' => $patient->chronic_diseases,
+                'hereditary'       => $patient->hereditary,
+            ],
+
+            'current_appointment' => $currentAppt ? [
+                'appointment_id' => $currentAppt->id,
+                'status'         => $currentAppt->status,
+                'start_time'     => $currentAppt->start_time,
+            ] : null,
+
+            'medical_history' => $patient->medicalRecords->map(function ($record) {
+                return [
+                    'record_id'       => $record->id,
+                    'date'            => $record->created_at->format('Y-m-d'),
+                    'doctor_name'     => ($record->doctor?->user?->name ?? 'غير متوفر') . ' ' . ($record->doctor?->user?->last_name ?? ''),
+                    'diagnosis'       => $record->diagnosis,
+                    'chief_complaint' => $record->chief_complaint,
+                    'notes'           => $record->notes,
+
+                    'prescription' => $record->appointment?->prescription ? [
+                        'instructions' => $record->appointment->prescription->instructions,
+                        'medicines'    => $record->appointment->prescription->items->map(function ($item) {
+                            return [
+                                'name'      => $item->medicine_name,
+                                'dosage'    => $item->dosage,
+                                'frequency' => $item->frequency,
+                                'duration'  => $item->duration,
+                            ];
+                        })
+                    ] : null,
+                ];
+            }),
+
+            'attachments' => $attachments->map(function ($file) {
+                return [
+                    'attachment_id' => $file->id,
+                    'title'         => $file->title ?? 'ملف بدون عنوان',
+                    'file_type'     => $file->file_type,
+                    'file_url'      => Storage::disk($file->disk)->url($file->file_path),
+                    'upload_date'   => $file->created_at->format('Y-m-d H:i'),
+                    'appointment_info' => $file->appointment ? [
+                        'appointment_id' => $file->appointment->id,
+                        'date'           => $file->appointment->appointment_date,
+                        'doctor_name'    => ($file->appointment->doctor?->user?->name ?? 'غير متوفر') . ' ' . ($file->appointment->doctor?->user?->last_name ?? ''),
+                    ] : null,
+                ];
+            }),
+
+            'analyses' => $attachments->map(function ($attachment) {
+                return [
+                    'id'             => $attachment->id,
+                    'appointment_id' => $attachment->appointment_id,
+                    'title'          => $attachment->title,
+                    'file_type'      => $attachment->file_type,
+                    'file_url'       => Storage::disk($attachment->disk)->url($attachment->file_path),
+                    'date'           => $attachment->created_at->format('Y-m-d'),
+                    'requested_by'   => ($attachment->appointment->doctor->user->name ?? 'غير متوفر') . ' ' . ($attachment->appointment->doctor->user->last_name ?? ''),
+                ];
+            }),
+        ];
+
         return response()->json([
-            'status'  => 'error',
-            'message' => 'عذراً، المريض غير مسجل في النظام أو الرقم غير صحيح.'
-        ], 404);
-    }
-
-    // 3. جلب المرفقات والتحاليل الطبية بناءً على معرف المريض الذي تم إيجاده
-    $attachments = Attachment::with('appointment.doctor.user')
-        ->where('patient_id', $patient->id)
-        ->latest()
-        ->get();
-
-    // موعد المريض الحالي المكتشف لليوم
-    $currentAppt = $patient->appointments->first();
-
-    // 4. تشكيل البيانات (Formatting) وتجميعها في الرد النهائي الشامل
-    $data = [
-        'personal_info' => [
-            'id'         => $patient->id,
-            'name'       => ($patient->user->name ?? 'غير متوفر') . ' ' . ($patient->user->last_name ?? ''),
-            'birth_date' => $patient->birth_date,
-            'age'        => $patient->birth_date ? Carbon::parse($patient->birth_date)->age : null,
-            'gender'     => $patient->gender,
-            'blood_type' => $patient->blood_type,
-            'weight'     => $patient->weight,
-            'taller'     => $patient->taller,
-        ],
-        'medical_background' => [
-            'allergies'        => $patient->allergies,
-            'chronic_diseases' => $patient->chronic_diseases,
-            'hereditary'       => $patient->hereditary,
-        ],
-
-        'current_appointment' => $currentAppt ? [
-            'appointment_id' => $currentAppt->id,
-            'status'         => $currentAppt->status,
-            'start_time'     => $currentAppt->start_time,
-        ] : null,
-
-        'medical_history' => $patient->medicalRecords->map(function ($record) {
-            return [
-                'record_id'       => $record->id,
-                'date'            => $record->created_at->format('Y-m-d'),
-                'doctor_name'     => ($record->doctor?->user?->name ?? 'غير متوفر') . ' ' . ($record->doctor?->user?->last_name ?? ''),
-                'diagnosis'       => $record->diagnosis,
-                'chief_complaint' => $record->chief_complaint,
-                'notes'           => $record->notes,
-
-                'prescription' => $record->appointment?->prescription ? [
-                    'instructions' => $record->appointment->prescription->instructions,
-                    'medicines'    => $record->appointment->prescription->items->map(function ($item) {
-                        return [
-                            'name'      => $item->medicine_name,
-                            'dosage'    => $item->dosage,
-                            'frequency' => $item->frequency,
-                            'duration'  => $item->duration,
-                        ];
-                    })
-                ] : null,
-            ];
-        }),
-
-        'attachments' => $attachments->map(function ($file) {
-            return [
-                'attachment_id' => $file->id,
-                'title'         => $file->title ?? 'ملف بدون عنوان',
-                'file_type'     => $file->file_type,
-                'file_url'      => Storage::disk($file->disk)->url($file->file_path),
-                'upload_date'   => $file->created_at->format('Y-m-d H:i'),
-                'appointment_info' => $file->appointment ? [
-                    'appointment_id' => $file->appointment->id,
-                    'date'           => $file->appointment->appointment_date,
-                    'doctor_name'    => ($file->appointment->doctor?->user?->name ?? 'غير متوفر') . ' ' . ($file->appointment->doctor?->user?->last_name ?? ''),
-                ] : null,
-            ];
-        }),
-
-        'analyses' => $attachments->map(function ($attachment) {
-            return [
-                'id'             => $attachment->id,
-                'appointment_id' => $attachment->appointment_id,
-                'title'          => $attachment->title,
-                'file_type'      => $attachment->file_type,
-                'file_url'       => Storage::disk($attachment->disk)->url($attachment->file_path),
-                'date'           => $attachment->created_at->format('Y-m-d'),
-                'requested_by'   => ($attachment->appointment->doctor->user->name ?? 'غير متوفر') . ' ' . ($attachment->appointment->doctor->user->last_name ?? ''),
-            ];
-        }),
-    ];
-
-    return response()->json([
-        'status'  => 'success',
-        'message' => 'تم جلب ملف المريض الشامل بنجاح باستخدام المعرف (ID).',
-        'data'    => $data
-    ], 200);
+            'status'  => 'success',
+            'message' => 'تم جلب ملف المريض الشامل بنجاح باستخدام المعرف (ID).',
+            'data'    => $data
+        ], 200);
     }
     public function getPatientAnalyses($patient_id)
     {
         $patient = Patient::findOrFail($patient_id);
         $analyses = Attachment::whereHas('appointment', function ($query) use ($patient_id) {
-                $query->where('patient_id', $patient_id);
-            })
+            $query->where('patient_id', $patient_id);
+        })
             ->with(['appointment.doctor.user'])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -176,13 +168,11 @@ class DoctorForPatientController extends Controller
             ], 403);
         }
 
-        // تعديل: جلب مواعيد اليوم مع تحميل علاقة المريض (وعلاقة اليوزر الخاصة بالمريض إذا كان الاسم هناك)
         $todayAppointments = Appointment::with(['patient.user']) // استخدمت patient.user تحسباً لكون الاسم في جدول المستخدمين
-                                        ->where('doctor_id', $doctor->id)
-                                        ->whereDate('appointment_date', Carbon::today())
-                                        ->get();
+            ->where('doctor_id', $doctor->id)
+            ->whereDate('appointment_date', Carbon::today())
+            ->get();
 
-        // إجمالي عدد مرضى/مواعيد اليوم
         $totalPatientsCount = $todayAppointments->count();
 
         $allowedStatuses = ['scheduled', 'arrived', 'completed', 'no_show'];
@@ -190,18 +180,12 @@ class DoctorForPatientController extends Controller
         $statusCounts = [];
 
         foreach ($allowedStatuses as $status) {
-            // جلب المواعيد الخاصة بالحالة الحالية
             $appointmentsByStatus = $todayAppointments->where('status', $status);
-
-            // حساب العدد لكل حالة
             $statusCounts[$status] = $appointmentsByStatus->count();
-
-            // تعديل: تحويل المواعيد لتشمل بيانات المريض واسمه بشكل مخصص ونظيف داخل الـ JSON
             $groupedData[$status] = $appointmentsByStatus->map(function ($appointment) {
                 return [
                     'appointment_id'   => $appointment->id,
                     'patient_id'       => $appointment->patient_id,
-                    // جلب الاسم من جدول المريض مباشرة، وإذا كان null يتم جلبه من جدول المستخدمين المرتبط به
                     'full_name' => ($appointment->patient?->user?->name ?? '') . ' ' . ($appointment->patient?->user?->last_name ?? ''),
                     'appointment_date' => $appointment->appointment_date,
                     'start_time'       => $appointment->start_time,
@@ -209,7 +193,6 @@ class DoctorForPatientController extends Controller
                     'status'           => $appointment->status,
                     'notes' => $appointment->notes,
 
-                    // يمكنك إضافة أي حقول أخرى تحتاجها من الـ $appointment هنا
                 ];
             })->values(); // إعادة تعيين الفهارس (indexes) لتكون متسلسلة في الـ JSON
         }
@@ -225,51 +208,47 @@ class DoctorForPatientController extends Controller
         ], 200);
     }
     public function searchPatients(Request $request)
-{
-    $search = $request->input('search');
+    {
+        $search = $request->input('search');
 
-    // 1. إذا كان حقل البحث فارغاً، عُد بمصفوفة فارغة فوراً ولا تجلب أي مريض
-    if (blank($search)) {
+        if (blank($search)) {
+            return response()->json([
+                'status' => true,
+                'action_type' => 'show_list',
+                'data' => []
+            ]);
+        }
+
+        if (is_numeric($search)) {
+            $patient = Patient::with('user')->find($search);
+
+            if ($patient) {
+                return response()->json([
+                    'status' => true,
+                    'action_type' => 'direct_open',
+                    'data' => [$patient]
+                ]);
+            }
+        }
+
+        $patients = Patient::whereHas('user', function ($query) use ($search) {
+            $query->where(function ($subQuery) use ($search) {
+                $subQuery->where('name', 'LIKE', "%{$search}%")
+                    ->orWhere('last_name', 'LIKE', "%{$search}%")
+                    ->orWhere('phone', 'LIKE', "%{$search}%");
+            });
+        })
+            ->with('user')
+            ->get();
+
         return response()->json([
             'status' => true,
             'action_type' => 'show_list',
-            'data' => []
+            'data' => $patients
         ]);
     }
-
-    // 2. السيناريو الأول: إذا كان المدخل رقماً مجرداً (قادم من مسح الـ QR Code)
-    if (is_numeric($search)) {
-        $patient = Patient::with('user')->find($search);
-
-        if ($patient) {
-            return response()->json([
-                'status' => true,
-                'action_type' => 'direct_open',
-                'data' => [$patient]
-            ]);
-        }
-    }
-
-    // 3. السيناريو الثاني: البحث بالاسم (مع تجميع الشروط داخل أقواس لمنع جلب كل المرضى)
-    $patients = Patient::whereHas('user', function ($query) use ($search) {
-        $query->where(function ($subQuery) use ($search) {
-            $subQuery->where('name', 'LIKE', "%{$search}%")
-                     ->orWhere('last_name', 'LIKE', "%{$search}%")
-                     ->orWhere('phone', 'LIKE', "%{$search}%");
-        });
-    })
-    ->with('user')
-    ->get();
-
-    return response()->json([
-        'status' => true,
-        'action_type' => 'show_list',
-        'data' => $patients
-    ]);
-}
     public function getPatientAttachments($id)
     {
-        // 1. التحقق من وجود المريض
         $patient = Patient::find($id);
 
         if (!$patient) {
@@ -279,26 +258,18 @@ class DoctorForPatientController extends Controller
             ], 404);
         }
 
-        // 2. جلب المرفقات مع بيانات الموعد المرتبط بها لمعرفة متى تم رفعها
         $attachments = Attachment::with('appointment.doctor.user')
-                                ->where('patient_id', $id)
-                                ->latest()
-                                ->get();
+            ->where('patient_id', $id)
+            ->latest()
+            ->get();
 
-        // 3. تنسيق البيانات وتوليد الروابط الصحيحة للملفات
         $data = $attachments->map(function ($file) {
             return [
                 'attachment_id' => $file->id,
                 'title'         => $file->title ?? 'ملف بدون عنوان',
                 'file_type'     => $file->file_type, // مثلا: image/png, application/pdf
-
-                // توليد الرابط الديناميكي للملف بناءً على الـ Disk
-                // تأكد من تنفيذ أمر: php artisan storage:link
                 'file_url'      => Storage::disk($file->disk)->url($file->file_path),
-
                 'upload_date'   => $file->created_at->format('Y-m-d H:i'),
-
-                // معلومات الموعد والطبيب المرتبط بهذا المرفق (إن وجد)
                 'appointment_info' => $file->appointment ? [
                     'appointment_id' => $file->appointment->id,
                     'date'           => $file->appointment->appointment_date,
@@ -307,7 +278,6 @@ class DoctorForPatientController extends Controller
             ];
         });
 
-        // 4. إرجاع الاستجابة
         return response()->json([
             'status'  => 'success',
             'message' => 'تم جلب المرفقات الطبية بنجاح.',
@@ -365,37 +335,30 @@ class DoctorForPatientController extends Controller
     }
     public function getPatientFullProfile($qr_token)
     {
-        // 1. جلب المريض بالـ qr_token مع كافة تفاصيل الحساب، السجلات الطبية، والتحاليل والمواعيد
         $patient = Patient::with([
             'user',
             'medicalRecords.doctor.user',
             'medicalRecords.appointment.prescription.items',
-            // جلب موعد اليوم الفعلي (إن وجد)
-            'appointments' => function($query) {
+            'appointments' => function ($query) {
                 $query->whereIn('status', ['pending', 'scheduled', 'arrived'])
-                      ->whereDate('appointment_date', Carbon::today())
-                      ->latest();
+                    ->whereDate('appointment_date', Carbon::today())
+                    ->latest();
             }
         ])->where('qr_token', $qr_token)->first(); // هنا تم التعديل للبحث عن طريق الـ QR
 
-        // 2. التحقق من وجود المريض
         if (!$patient) {
             return response()->json([
                 'status'  => 'error',
                 'message' => 'رمز الـ QR غير صالح أو المريض غير مسجل في النظام.'
             ], 404);
         }
-
-        // 3. جلب المرفقات والتحاليل الطبية بناءً على معرف المريض الذي تم إيجاده
         $attachments = Attachment::with('appointment.doctor.user')
             ->where('patient_id', $patient->id)
             ->latest()
             ->get();
 
-        // موعد المريض الحالي المكتشف لليوم
         $currentAppt = $patient->appointments->first();
 
-        // 4. تشكيل البيانات (Formatting) وتجميعها في الرد النهائي الشامل
         $data = [
             'personal_info' => [
                 'id'         => $patient->id,
@@ -477,27 +440,26 @@ class DoctorForPatientController extends Controller
         ], 200);
     }
     public function getProfile()
-{
-    $user = Auth::user();
-    $doctorProfile = $user->doctorProfile;
+    {
+        $user = Auth::user();
+        $doctorProfile = $user->doctorProfile;
 
-    if (!$doctorProfile) {
+        if (!$doctorProfile) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'لم يتم العثور على ملف شخصي لهذا الطبيب.'
+            ], 404);
+        }
+        $doctorProfile->load([
+            'user:id,name,last_name,email,phone',
+            'speciality:id,specialization_name',
+            'clinic:id,clinic_name,open_time,close_time'
+        ]);
+
         return response()->json([
-            'status'  => false,
-            'message' => 'لم يتم العثور على ملف شخصي لهذا الطبيب.'
-        ], 404);
+            'status'  => true,
+            'message' => 'تم جلب الملف الشخصي للطبيب بنجاح.',
+            'data'    => $doctorProfile
+        ], 200);
     }
-    $doctorProfile->load([
-        'user:id,name,last_name,email,phone',
-        'speciality:id,specialization_name',
-        'clinic:id,clinic_name,open_time,close_time'
-    ]);
-
-    return response()->json([
-        'status'  => true,
-        'message' => 'تم جلب الملف الشخصي للطبيب بنجاح.',
-        'data'    => $doctorProfile
-    ], 200);
-    }
-
 }
